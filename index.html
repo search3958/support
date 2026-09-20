@@ -1,183 +1,482 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <meta charset="UTF-8"><title>サポート | Sentaro</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="https://search3958.github.io/project/logos/3958logo_main.svg">
-    <meta name="description" content="Sentaroのサポートページ。ツールの使い方やよくある質問、各種プロダクトに関するお問い合わせ・サポート情報を提供しています。">
-    <meta name="keywords" content="ヘルプ, サポート, 使い方, よくある質問, FAQ, お問い合わせ, Sentaro">
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-    <link rel="canonical" href="https://search3958.github.io/support/">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="サポート | Sentaro">
-    <meta property="og:description" content="Sentaroのサポートページ。ツールの使い方やよくある質問、お問い合わせ情報を提供しています。">
-    <meta property="og:url" content="https://search3958.github.io/support/">
-    <meta property="og:site_name" content="Sentaro - Support">
-    <meta property="og:image" content="https://search3958.github.io/project/logos/3958logo_main.svg">
-    <meta property="og:locale" content="ja_JP">
-    <meta property="og:locale:alternate" content="en_US">
-    <meta property="og:locale:alternate" content="zh_CN">
-    <meta property="og:locale:alternate" content="zh_TW">
-    <meta property="og:locale:alternate" content="ko_KR">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="サポート | Sentaro">
-    <meta name="twitter:description" content="Sentaroのサポートページ。ツールの使い方やよくある質問、お問い合わせ情報を提供しています。">
-    <meta name="twitter:image" content="https://search3958.github.io/project/logos/3958logo_main.svg">
-    <link rel="alternate" hreflang="ja" href="https://search3958.github.io/support/">
-    <link rel="alternate" hreflang="en" href="https://search3958.github.io/support/">
-    <link rel="alternate" hreflang="zh-CN" href="https://search3958.github.io/support/">
-    <link rel="alternate" hreflang="zh-TW" href="https://search3958.github.io/support/">
-    <link rel="alternate" hreflang="ko" href="https://search3958.github.io/support/">
-    <link rel="alternate" hreflang="x-default" href="https://search3958.github.io/support/">
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      "name": "サポート",
-      "description": "Sentaroのサポートページ。ツールの使い方やよくある質問、お問い合わせ情報を提供しています。",
-      "url": "https://search3958.github.io/support/",
-      "isPartOf": {
-        "@type": "WebSite",
-        "name": "Sentaro",
-        "url": "https://search3958.github.io"
+<head>
+  <meta charset="UTF-8">
+  <title id="page-title">お困りですか？ | Sentaro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta id="meta-description" name="description" content="Sentaroの製品について、使い方・よくある質問・トラブルシューティングをまとめています。">
+  <meta id="meta-keywords" name="keywords" content="Sentaro, ヘルプ, サポート, FAQ, 使い方, トラブルシューティング">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link id="canonical-link" rel="canonical" href="https://search3958.github.io/support/">
+  <link rel="icon" href="https://search3958.github.io/project/logos/3958logo_main.svg">
+
+  <meta property="og:type" content="website">
+  <meta id="og-title" property="og:title" content="お困りですか？ | Sentaro">
+  <meta id="og-description" property="og:description" content="Sentaroの製品について、使い方・よくある質問・トラブルシューティングをまとめています。">
+  <meta property="og:url" content="https://search3958.github.io/support/">
+  <meta property="og:site_name" content="Sentaro Support">
+  <meta id="og-locale" property="og:locale" content="ja_JP">
+
+  <script type="application/ld+json" id="website-jsonld">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Sentaro",
+    "url": "https://search3958.github.io"
+  }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wdth,wght,ROND@6..144,25..151,1..1000,0..100&display=swap');
+
+    * {
+      box-sizing: border-box;
+      font-family: "Google Sans Flex", "Noto Sans KR", sans-serif;
+      line-height: 1.5;
+    }
+
+    body {
+      margin: 0;
+      color: #111;
+      background: #fff;
+    }
+
+    a {
+      color: #111;
+      text-decoration: none;
+    }
+
+    header {
+      position: fixed;
+      background: #fffb;
+      color: #000;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 12px 0;
+      gap: 24px;
+      font-size: 13px;
+    }
+
+    main {
+      width: min(960px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 72px 0;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(36px, 6vw, 48px);
+      font-weight: 400;
+    }
+
+    .lead {
+      max-width: 720px;
+      margin: 0 0 48px;
+      font-size: 18px;
+      opacity: .72;
+    }
+
+    h2 {
+      margin: 40px 0 16px;
+      font-size: 28px;
+      font-weight: 500;
+    }
+
+    .docs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .item {
+      display: block;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 32px;
+      corner-shape: superellipse(1.6);
+    }
+
+    .item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .item span {
+      opacity: .68;
+      font-size: 14px;
+    }
+
+    footer {
+      padding: 48px 0;
+      text-align: center;
+      font-size: 20px;
+    }
+
+    .xincard {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding-top: 24px;
+      gap: 4px;
+      flex-direction: column;
+      font-weight: 600;
+      text-align: center;
+      font-size: 32px;
+      background-image: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 1),
+        rgba(207, 217, 232, 1)
+      );
+    }
+
+    .primary-btn {
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+
+    .error {
+      padding: 16px 0;
+      opacity: .72;
+    }
+
+    @media (max-width: 720px) {
+      .docs {
+        grid-template-columns: 1fr;
       }
     }
-    </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "ホーム",
-          "item": "https://search3958.github.io/"
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": "サポート",
-          "item": "https://search3958.github.io/support/"
-        }
-      ]
-    }
-    </script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wdth,wght,ROND@6..144,25..151,1..1000,0..100&display=swap');
-    *{
-        font-family: "Google Sans Flex", "Noto Sans KR",sans-serif;
-            line-height: 1.5 !important;
-    }
-    body{
-        padding:0;
-        margin:0;
+  </style>
+</head>
 
-    }
-.small{
-    font-size:16px;
-    opacity:0.7;
-    transition: 1.5s all cubic-bezier(1,0,.18,1);
-    padding-top:0px;
-    font-weight:400;
+<body>
+  <script src="https://search3958.github.io/frameworks/headerv2.js"></script>
 
-}
-.xincard{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    padding-top:24px;
-    gap:4px;
-    flex-direction: column;
-    font-weight:bold;
-    text-align:center;
-    font-size:32px;
-    background-image: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(207, 217, 232, 1));
-}
-    .primary-btn{
-      padding:8px 16px;
-      border-radius:100px;
-      font-weight:bold;
-      border:none;
-    }
-    header{
-      position:fixed;
-      background:#fffb;
-      color:#000;
-      top:0;
-      left:0;
-      width:100vw;
-      z-index:9999;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      backdrop-filter:blur(16px);
-      padding:12px 0;
-      gap:24px;
-      font-size:13px;
-    }
-    a{
-          text-decoration: none;
-        color:#000;
-    }
-    @media (max-width:720px){
-      .product-title{
-        font-size:32px;
-      }
-      h3.product-title{font-size:24px;}
-      .product-grid{
-        grid-template-columns:1fr;
-      }
-    }
-    footer{
-      padding:48px 0px;
-      text-align:center;
-      font-size:20px;
+  <main>
+    <h1 id="hero-title">お困りですか？</h1>
+    <p class="lead" id="hero-description">
+      Sentaroの製品について、使い方・よくある質問・トラブルシューティングをまとめています。
+    </p>
 
-    }
-</style>
-  <body>
-  <script src="../../frameworks/headerv2.js"></script>
+    <h2 id="recent-title">最近の記事</h2>
+    <div class="docs" id="docs-list"></div>
+  </main>
 
+  <div
+    class="xincard"
+    style="
+      padding:48px 0;
+      background-image:
+        conic-gradient(
+          from 247deg,
+          rgba(58,255,160,1) 0deg,
+          rgba(0,255,246,1) 0deg,
+          rgba(58,255,160,1) 180deg,
+          rgba(255,255,255,1) 180deg,
+          rgba(88,255,239,1) 227deg,
+          rgba(0,242,105,1) 360deg
+        );
+    "
+  >
+    <span id="support-contact-title" class="app-name" style="--xin-delay:0.16s;font-size:40px;">
+      お問い合わせ
+    </span>
 
-    <div class="xincard" style="padding:48px 0; background-image: conic-gradient(from 247deg, rgba(58, 255, 160, 1) 0deg, rgba(0, 255, 246, 1) 0deg, rgba(58, 255, 160, 1) 180deg, rgba(255, 255, 255, 1) 180deg, rgba(88, 255, 239, 1) 227deg, rgba(0, 242, 105, 1) 360deg);">
-        
-        <span class="app-name " style="--xin-delay:0.16s;font-size:40px;">お問い合わせ</span>
-        
-        
-        <div class="small " style="--xin-delay:0.08s;font-size:24px;">
-            何かございましたらご遠慮なく
-        </div>
-
-
-        <button class="primary-btn " style="--xin-delay:0.24s;background:#fff;color:#000;" onclick="window.location.href='https://docs.google.com/forms/d/e/1FAIpQLSegCKF2UdLdEA7cQ6y3PS3vlZ8fT29KnEyo26RDl15ocIM1Ig/viewform?usp=sharing&ouid=116246090197695118669'">フォームを表示</button>
-
+    <div id="support-contact-description" class="small" style="--xin-delay:0.08s;font-size:24px;">
+      何かございましたらご遠慮なくお問い合わせください。
     </div>
 
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6151036058675874"
-     crossorigin="anonymous"></script>
-<!-- Support -->
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-6151036058675874"
-     data-ad-slot="2470646390"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+    <button
+      id="support-contact-button"
+      class="primary-btn"
+      type="button"
+      style="--xin-delay:0.24s;background:#fff;color:#000;"
+    >
+      フォームを表示
+    </button>
+  </div>
 
-  <script src="https://search3958.github.io/frameworks/headerv2.js"></script>
-</body>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-7N56NHPY3C"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7N56NHPY3C"></script>
 
-  gtag('config', 'G-7N56NHPY3C');
-</script>
-<script src="/frameworks/lang.js" data-xml="/xml/products.xml"></script>
-<script src="https://search3958.github.io/check.js?check=none"></script>
+  <script>
+    (() => {
+      "use strict";
+
+      const SITE_BASE = "https://search3958.github.io/support";
+      const CONTACT_FORM_URL =
+        "https://docs.google.com/forms/d/e/1FAIpQLSegCKF2UdLdEA7cQ6y3PS3vlZ8fT29KnEyo26RDl15ocIM1Ig/viewform?usp=sharing&ouid=116246090197695118669";
+
+      const LANGS = {
+        ja: {
+          htmlLang: "ja",
+          locale: "ja_JP",
+          title: "お困りですか？ | Sentaro",
+          description: "Sentaroの製品について、使い方・よくある質問・トラブルシューティングをまとめています。",
+          keywords: "Sentaro, ヘルプ, サポート, FAQ, 使い方, トラブルシューティング",
+          heroTitle: "お困りですか？",
+          recentTitle: "最近の記事",
+          contactTitle: "お問い合わせ",
+          contactDescription: "何かございましたらご遠慮なくお問い合わせください。",
+          contactButton: "フォームを表示",
+          empty: "記事がありません。",
+          error: "記事情報を読み込めませんでした。"
+        },
+        en: {
+          htmlLang: "en",
+          locale: "en_US",
+          title: "Need Help? | Sentaro",
+          description: "Sentaro help and support information, including guides, frequently asked questions, and troubleshooting.",
+          keywords: "Sentaro, help, support, FAQ, guide, troubleshooting, contact",
+          heroTitle: "Need Help?",
+          recentTitle: "Recent Articles",
+          contactTitle: "Contact Us",
+          contactDescription: "Please feel free to contact us if you have any questions.",
+          contactButton: "Open Contact Form",
+          empty: "No articles are available.",
+          error: "Could not load the article information."
+        },
+        ko: {
+          htmlLang: "ko",
+          locale: "ko_KR",
+          title: "도움이 필요하신가요? | Sentaro",
+          description: "Sentaro 제품의 사용 방법, 자주 묻는 질문, 문제 해결 정보를 안내합니다.",
+          keywords: "Sentaro, 도움말, 지원, FAQ, 사용 방법, 문제 해결, 문의",
+          heroTitle: "도움이 필요하신가요?",
+          recentTitle: "최근 문서",
+          contactTitle: "문의하기",
+          contactDescription: "궁금한 점이 있으시면 언제든지 문의해 주세요.",
+          contactButton: "문의 양식 열기",
+          empty: "표시할 문서가 없습니다.",
+          error: "문서 정보를 불러오지 못했습니다."
+        },
+        kp: {
+          htmlLang: "ko-KP",
+          locale: "ko_KP",
+          title: "도움이 필요하십니까? | Sentaro",
+          description: "Sentaro 제품의 리용 방법, 자주 묻는 질문, 문제 해결 정보를 안내합니다.",
+          keywords: "Sentaro, 도움말, 지원, FAQ, 리용 방법, 문제 해결, 문의",
+          heroTitle: "도움이 필요하십니까?",
+          recentTitle: "최근 문서",
+          contactTitle: "문의하기",
+          contactDescription: "문의하실 내용이 있으면 언제든지 연락해 주십시오.",
+          contactButton: "문의 양식 열기",
+          empty: "표시할 문서가 없습니다.",
+          error: "문서 정보를 불러오지 못했습니다."
+        },
+        zh: {
+          htmlLang: "zh-CN",
+          locale: "zh_CN",
+          title: "需要帮助吗？ | Sentaro",
+          description: "Sentaro 帮助与支持信息，包括使用指南、常见问题和故障排查。",
+          keywords: "Sentaro, 帮助, 支持, FAQ, 使用指南, 故障排查, 联系我们",
+          heroTitle: "需要帮助吗？",
+          recentTitle: "最近文章",
+          contactTitle: "联系我们",
+          contactDescription: "如有任何问题，欢迎随时联系我们。",
+          contactButton: "打开联系表单",
+          empty: "没有可用的文章。",
+          error: "无法加载文章信息。"
+        },
+        "zh-hk": {
+          htmlLang: "zh-Hant-HK",
+          locale: "zh_HK",
+          title: "需要協助嗎？ | Sentaro",
+          description: "Sentaro 支援資訊，包括使用指南、常見問題及疑難排解。",
+          keywords: "Sentaro, 支援, 幫助, FAQ, 使用指南, 疑難排解, 聯絡我們",
+          heroTitle: "需要協助嗎？",
+          recentTitle: "最近文章",
+          contactTitle: "聯絡我們",
+          contactDescription: "如有任何問題，歡迎隨時聯絡我們。",
+          contactButton: "開啟聯絡表單",
+          empty: "沒有可用的文章。",
+          error: "無法載入文章資訊。"
+        }
+      };
+
+      const ARTICLE_DESCRIPTIONS = {
+        ad_error: {
+          ja: "広告ブロッカーやブラウザのプライバシー設定に関する確認事項",
+          en: "Things to check regarding ad blockers and browser privacy settings.",
+          ko: "광고 차단 기능 및 브라우저 개인정보 보호 설정에 관한 확인 사항",
+          kp: "광고막기 및 브라우저의 사생활 보호 설정에 관한 확인 사항",
+          zh: "有关广告拦截器和浏览器隐私设置的检查事项",
+          "zh-hk": "有關廣告攔截器及瀏覽器私隱設定的檢查事項"
+        },
+        newtab_setup: {
+          ja: "ブラウザの新しいタブにNewtabを設定する手順",
+          en: "Steps for setting Newtab as your browser's new tab page.",
+          ko: "브라우저의 새 탭에 Newtab을 설정하는 방법",
+          kp: "브라우저의 새 페지에 Newtab을 설정하는 방법",
+          zh: "将 Newtab 设置为浏览器新标签页的步骤",
+          "zh-hk": "將 Newtab 設定為瀏覽器新分頁的步驟"
+        }
+      };
+
+      function getSelectedLang() {
+        const value = localStorage.getItem("selectedLang");
+        return Object.prototype.hasOwnProperty.call(LANGS, value) ? value : "ja";
+      }
+
+      function parseTitlesYaml(text) {
+        const result = {};
+        let currentKey = null;
+
+        for (const rawLine of text.replace(/\r/g, "").split("\n")) {
+          const line = rawLine.trimEnd();
+
+          if (!line.trim() || line.trimStart().startsWith("#")) continue;
+
+          const top = /^([A-Za-z0-9_-]+):$/.exec(line.trim());
+          if (top) {
+            currentKey = top[1];
+            result[currentKey] = [];
+            continue;
+          }
+
+          const item = /^\s*-\s*(.*)$/.exec(line);
+          if (item && currentKey) {
+            let value = item[1].trim();
+            if (
+              value.length >= 2 &&
+              value.startsWith('"') &&
+              value.endsWith('"')
+            ) {
+              try {
+                value = JSON.parse(value);
+              } catch (_) {
+                value = value.slice(1, -1);
+              }
+            } else if (
+              value.length >= 2 &&
+              value.startsWith("'") &&
+              value.endsWith("'")
+            ) {
+              value = value.slice(1, -1).replace(/''/g, "'");
+            }
+            result[currentKey].push(value);
+          }
+        }
+
+        return result;
+      }
+
+      function applyLanguage(lang) {
+        const ui = LANGS[lang];
+        document.documentElement.lang = ui.htmlLang;
+        document.title = ui.title;
+
+        document.getElementById("page-title").textContent = ui.title;
+        document.getElementById("meta-description").setAttribute("content", ui.description);
+        document.getElementById("meta-keywords").setAttribute("content", ui.keywords);
+        document.getElementById("og-title").setAttribute("content", ui.title);
+        document.getElementById("og-description").setAttribute("content", ui.description);
+        document.getElementById("og-locale").setAttribute("content", ui.locale);
+
+        document.getElementById("hero-title").textContent = ui.heroTitle;
+        document.getElementById("hero-description").textContent = ui.description;
+        document.getElementById("recent-title").textContent = ui.recentTitle;
+        document.getElementById("support-contact-title").textContent = ui.contactTitle;
+        document.getElementById("support-contact-description").textContent = ui.contactDescription;
+        document.getElementById("support-contact-button").textContent = ui.contactButton;
+      }
+
+      function renderArticles(titleMap, lang) {
+        const list = document.getElementById("docs-list");
+        list.textContent = "";
+
+        const languageCodes = Array.isArray(titleMap.filename)
+          ? titleMap.filename
+          : Object.keys(LANGS);
+
+        const langIndex = languageCodes.indexOf(lang);
+        const fallbackIndex = languageCodes.indexOf("ja");
+        const index = langIndex >= 0 ? langIndex : fallbackIndex >= 0 ? fallbackIndex : 0;
+
+        const slugs = Object.keys(titleMap).filter((key) => key !== "filename");
+
+        if (!slugs.length) {
+          const empty = document.createElement("p");
+          empty.className = "error";
+          empty.textContent = LANGS[lang].empty;
+          list.appendChild(empty);
+          return;
+        }
+
+        for (const slug of slugs) {
+          const titles = Array.isArray(titleMap[slug]) ? titleMap[slug] : [];
+          const title = titles[index] || titles[fallbackIndex] || slug;
+
+          const link = document.createElement("a");
+          link.className = "item";
+          link.href = `./docs/${lang}/${encodeURIComponent(slug)}.html`;
+
+          const strong = document.createElement("strong");
+          strong.textContent = title;
+
+          const span = document.createElement("span");
+          span.textContent =
+            ARTICLE_DESCRIPTIONS[slug]?.[lang] ??
+            ARTICLE_DESCRIPTIONS[slug]?.ja ??
+            slug;
+
+          link.append(strong, span);
+          list.appendChild(link);
+        }
+      }
+
+      async function init() {
+        const lang = getSelectedLang();
+        applyLanguage(lang);
+
+        try {
+          const response = await fetch("./docs/titles.yaml", { cache: "no-cache" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          const yamlText = await response.text();
+          const titleMap = parseTitlesYaml(yamlText);
+
+          // Keep the parsed YAML available to the page for other scripts.
+          window.supportTitles = titleMap;
+
+          renderArticles(titleMap, lang);
+        } catch (error) {
+          console.error("[Sentaro Support] Failed to load titles.yaml.", error);
+
+          const list = document.getElementById("docs-list");
+          list.textContent = "";
+          const errorMessage = document.createElement("p");
+          errorMessage.className = "error";
+          errorMessage.textContent = LANGS[lang].error;
+          list.appendChild(errorMessage);
+        }
+      }
+
+      document.getElementById("support-contact-button").addEventListener("click", () => {
+        window.location.href = CONTACT_FORM_URL;
+      });
+
+      init();
+    })();
+  </script>
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag("js", new Date());
+    gtag("config", "G-7N56NHPY3C");
+  </script>
+
+  <script src="/frameworks/lang.js" data-xml="/xml/products.xml"></script>
+  <script src="https://search3958.github.io/check.js?check=none"></script>
 </body>
 </html>

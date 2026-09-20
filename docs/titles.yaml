@@ -1,0 +1,23 @@
+ad_error:
+  - "「利用規約に違反しています」と表示される場合"
+  - "When You See \"You Are in Violation of the Terms of Use\""
+  - "\"이용약관을 위반했습니다\"가 표시되는 경우"
+  - "\"리용규칙을 위배했습니다\"가 가리키는 경우"
+  - "当显示“违反使用条款”时"
+  - "當顯示「違反使用條款」時"
+
+newtab_setup:
+  - "Newtab の設定方法"
+  - "How to Set Up Newtab"
+  - "Newtab 설정 방법"
+  - "Newtab 설정방법"
+  - "Newtab 设置方法"
+  - "Newtab 設定方法"
+
+filename:
+  - ja
+  - en
+  - ko
+  - kp
+  - zh
+  - zh-hk
