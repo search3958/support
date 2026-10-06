@@ -14,6 +14,14 @@ newtab_setup:
   - "Newtab 设置方法"
   - "Newtab 設定方法"
 
+saetab_for_chrome_setup:
+  - "SaeTab for Chrome インストール手順"
+  - "SaeTab for Chrome Installation Guide"
+  - "SaeTab for Chrome 설치 방법"
+  - "SaeTab for Chrome 설치방법"
+  - "SaeTab for Chrome 安装指南"
+  - "SaeTab for Chrome 安裝指南"
+
 filename:
   - ja
   - en
