@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>0f8 Cloud ToDo Test</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="todo-main-container">
+    <header class="todo-header">
+      <div>
+        <h1>0f8 Cloud ToDo</h1>
+        <p>0f8 Account Client Service の同期テスト用アプリ</p>
+      </div>
+      <button id="login-button" type="button">ログイン</button>
+    </header>
+
+    <section class="todo-card">
+      <div class="status-line"><span id="auth-status">未ログイン</span><span id="account-name">-</span></div>
+      <p id="action-status" class="todo-status" aria-live="polite"></p>
+    </section>
+
+    <section id="app-panel" class="todo-card" hidden>
+      <form id="todo-form" class="todo-form">
+        <input id="todo-input" maxlength="200" autocomplete="off" placeholder="やることを入力" required>
+        <button type="submit">追加</button>
+      </form>
+      <div class="todo-toolbar">
+        <button id="sync-button" type="button">同期</button>
+        <button id="refresh-account" type="button">アカウント情報</button>
+        <button id="refresh-usage" type="button">使用容量</button>
+        <button id="logout-button" type="button">ログアウト</button>
+      </div>
+      <ul id="todo-list" class="todo-list"></ul>
+    </section>
+
+    <section id="account-panel" class="todo-card" hidden>
+      <h2>アカウント情報</h2>
+      <dl class="info-grid">
+        <div><dt>ID</dt><dd id="info-id">-</dd></div>
+        <div><dt>名前</dt><dd id="info-name">-</dd></div>
+        <div><dt>現在のOrigin</dt><dd id="info-origin">-</dd></div>
+      </dl>
+    </section>
+
+    <section id="usage-panel" class="todo-card" hidden>
+      <h2>使用容量</h2>
+      <div class="usage-box">
+        <strong id="usage-total">-</strong>
+        <span id="usage-account-total">-</span>
+      </div>
+      <div id="usage-domains" class="usage-domains"></div>
+    </section>
+  </main>
+  <script src="../client-service.js"></script>
+  <script src="todo.js"></script>
+</body>
+</html>

@@ -186,3 +186,48 @@ body {
     border-radius: 16px;
   }
 }
+
+.usage-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.usage-summary > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, CanvasText 16%, transparent);
+  border-radius: 12px;
+}
+
+.usage-summary span {
+  font-size: 0.82rem;
+  opacity: 0.72;
+}
+
+.usage-table-wrap {
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 460px;
+}
+
+.usage-table th,
+.usage-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .usage-summary {
+    grid-template-columns: 1fr;
+  }
+}

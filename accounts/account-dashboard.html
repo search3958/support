@@ -10,19 +10,18 @@
   <main class="account-page">
     <header class="account-header">
       <h1 class="account-title">0f8 Account Dashboard</h1>
-      <p class="account-subtitle">アカウント情報と認証状態を管理します。</p>
+      <p class="account-subtitle">アカウント情報、保存容量、認証状態を管理します。</p>
     </header>
-
     <section id="login-card" class="account-card">
       <button id="dashboard-login" class="account-button" type="button">ログイン</button>
       <p id="dashboard-login-status" class="account-status" aria-live="polite"></p>
     </section>
-
     <section id="dashboard-card" class="account-card account-hidden">
       <div class="dashboard-grid">
         <div>
-          <img id="account-icon" class="dashboard-avatar" alt="アカウントアイコン">
+          <img id="account-icon" class="dashboard-avatar" alt="アカウントアイコン" hidden>
           <p id="account-id" class="account-note"></p>
+          <p id="management-origin-status" class="account-status" aria-live="polite"></p>
         </div>
 
         <form id="profile-form" class="dashboard-row" novalidate>
@@ -33,10 +32,27 @@
           <input id="account-icon-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
           <div class="dashboard-row two">
             <button id="remove-icon" class="account-button secondary" type="button">アイコンを削除</button>
-            <button class="account-button" type="submit">保存</button>
+            <button id="save-profile" class="account-button" type="submit">保存</button>
           </div>
           <p id="profile-status" class="account-status" aria-live="polite"></p>
         </form>
+
+        <section class="dashboard-row">
+          <h2>使用容量</h2>
+          <div class="usage-summary">
+            <div><span>保存データ</span><strong id="usage-total">-</strong></div>
+            <div><span>アイコン</span><strong id="usage-icon">-</strong></div>
+            <div><span>合計</span><strong id="usage-account-total">-</strong></div>
+          </div>
+          <p id="usage-status" class="account-status" aria-live="polite"></p>
+          <div class="usage-table-wrap">
+            <table class="usage-table">
+              <thead><tr><th>ドメイン</th><th>Base122</th><th>容量</th></tr></thead>
+              <tbody id="usage-domains"></tbody>
+            </table>
+          </div>
+          <button id="refresh-usage" class="account-button secondary" type="button">容量を更新</button>
+        </section>
 
         <form id="password-form" class="dashboard-row" novalidate>
           <div class="account-field">
@@ -60,7 +76,6 @@
       </div>
     </section>
   </main>
-
-  <script type="module" src="account-dashboard.js"></script>
+  <script src="account-dashboard.js"></script>
 </body>
 </html>
