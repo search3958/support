@@ -15,7 +15,7 @@
   }
   function setStatus(element, message, kind = "") { if (!element) { console.error("[0f8-login] Status element is missing."); return; } element.textContent = message; element.dataset.kind = kind; }
   async function api(path, body) {
-    const response = await fetch(`${API_BASE}${path}`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body), cache: "no-store", credentials: "include" });
+    const response = await fetch(`${API_BASE}${path}`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body), cache: "no-store", credentials: "omit" });
     const data = await response.json().catch(() => null);
     if (!response.ok || !data?.ok) throw new Error(data?.error?.message || `Request failed (${response.status}).`);
     return data;
@@ -23,9 +23,9 @@
   function sendResult(result) {
     const returnOrigin = validateReturnOrigin();
     if (!window.opener || window.opener.closed) { log("no_opener", { returnOrigin }); setTimeout(() => window.close(), 500); return; }
-    const payload = { type: "OF8_AUTH_RESULT", version: 3, state, dataAccessKey: result.dataAccessKey, account: result.account };
+    const payload = { type: "OF8_AUTH_RESULT", version: 2, state, accessToken: result.token, signature: result.signature, dataAccessKey: result.dataAccessKey, account: result.account };
     window.opener.postMessage(payload, returnOrigin);
-    log("auth_result_sent", { returnOrigin, id: result.account?.id, httpOnlySession: true });
+    log("auth_result_sent", { returnOrigin, id: result.account?.id });
     setTimeout(() => window.close(), 250);
   }
   async function submit(path, form, statusElement) {

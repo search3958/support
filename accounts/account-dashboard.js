@@ -3,12 +3,17 @@
   "use strict";
 
   const API_BASE = "https://sentaro-0f8-accounts.takesen2278.workers.dev";
+  const TOKEN_COOKIE = "of8_access_token";
+  const SIGNATURE_COOKIE = "of8_access_signature";
   const DATA_KEY_STORAGE = "__of8_data_access_key_v2__";
   const MANAGEMENT_ORIGIN = "https://search3958.github.io";
 
   function log(event, details = {}) { console.log("[0f8-dashboard]", event, details); }
   function errorLog(event, error, details = {}) { console.error("[0f8-dashboard]", event, error instanceof Error ? error.message : String(error), details); }
   function required(id) { const element = document.getElementById(id); if (!element) { console.error(`[0f8-dashboard] Required element not found: #${id}`); throw new Error(`Required element not found: #${id}`); } return element; }
+  function cookie(name) { const prefix = `${encodeURIComponent(name)}=`; const item = document.cookie.split("; ").find((entry) => entry.startsWith(prefix)); return item ? decodeURIComponent(item.slice(prefix.length)) : ""; }
+  function setCookie(name, value) { document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=259200; Path=/; Secure; SameSite=Lax`; }
+  function delCookie(name) { document.cookie = `${encodeURIComponent(name)}=; Max-Age=0; Path=/; Secure; SameSite=Lax`; }
   function setStatus(id, message, kind = "") { const element = required(id); element.textContent = message; element.dataset.kind = kind; }
   function base64Url(bytes) { let binary = ""; for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""); }
   async function fileToBase64Url(file) { return base64Url(new Uint8Array(await file.arrayBuffer())); }
@@ -21,20 +26,23 @@
     });
   }
   function isManagementOrigin() { return location.origin.toLowerCase() === MANAGEMENT_ORIGIN; }
-  function clearSession() { localStorage.removeItem(DATA_KEY_STORAGE); log("local_access_key_cleared"); }
+  function clearSession() { delCookie(TOKEN_COOKIE); delCookie(SIGNATURE_COOKIE); localStorage.removeItem(DATA_KEY_STORAGE); }
 
   async function api(path, options = {}) {
     const headers = new Headers({ Accept: "application/json", ...(options.headers || {}) });
+    const token = cookie(TOKEN_COOKIE); const signature = cookie(SIGNATURE_COOKIE);
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    if (signature) headers.set("X-OF8-Signature", signature);
     if (options.body !== undefined) headers.set("Content-Type", "application/json");
     if (options.dataAccess === true) {
       const accessKey = localStorage.getItem(DATA_KEY_STORAGE) || "";
       if (!accessKey) throw new Error("データアクセスキーがありません。再ログインしてください。");
       headers.set("X-OF8-Data-Access-Key", accessKey);
     }
-    const response = await fetch(`${API_BASE}${path}`, { method: options.method || "GET", headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), cache: "no-store", credentials: "include" });
+    const response = await fetch(`${API_BASE}${path}`, { method: options.method || "GET", headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), cache: "no-store", credentials: "omit" });
     const data = await response.json().catch(() => null);
     if (!response.ok || !data?.ok) throw new Error(data?.error?.message || `Request failed (${response.status}).`);
-    if (data.expiresAt) log("session_state_received", { path, expiresAt: data.expiresAt, httpOnlySession: true });
+    if (data.token && data.signature) { setCookie(TOKEN_COOKIE, data.token); setCookie(SIGNATURE_COOKIE, data.signature); log("token_rotated", { path }); }
     return data;
   }
 
@@ -85,13 +93,13 @@
       const expectedOrigin = location.origin; const state = popupUrl.searchParams.get("state"); const timeout = setTimeout(() => { window.removeEventListener("message", handler); reject(new Error("ログインがタイムアウトしました。")); }, 5 * 60 * 1000);
       function handler(event) {
         if (event.origin !== expectedOrigin || event.source !== popup) return; const message = event.data;
-        if (!message || message.type !== "OF8_AUTH_RESULT" || message.version !== 3 || message.state !== state) return;
-        if (typeof message.dataAccessKey !== "string") { clearTimeout(timeout); window.removeEventListener("message", handler); reject(new Error("認証結果が不正です。")); return; }
+        if (!message || message.type !== "OF8_AUTH_RESULT" || message.version !== 2 || message.state !== state) return;
+        if (typeof message.accessToken !== "string" || typeof message.signature !== "string" || typeof message.dataAccessKey !== "string") { clearTimeout(timeout); window.removeEventListener("message", handler); reject(new Error("認証結果が不正です。")); return; }
         clearTimeout(timeout); window.removeEventListener("message", handler); resolve(message);
       }
       window.addEventListener("message", handler);
     });
-    localStorage.setItem(DATA_KEY_STORAGE, result.dataAccessKey); log("login_completed", { httpOnlySession: true }); await load();
+    setCookie(TOKEN_COOKIE, result.accessToken); setCookie(SIGNATURE_COOKIE, result.signature); localStorage.setItem(DATA_KEY_STORAGE, result.dataAccessKey); log("login_completed"); await load();
   }
 
   async function saveProfile() {
@@ -132,7 +140,7 @@
     required("refresh-usage").addEventListener("click", async () => { try { await loadUsage(); } catch (error) { errorLog("usage_refresh_failed", error); setStatus("usage-status", error.message, "error"); } });
     const loginButton = required("dashboard-login");
     loginButton.addEventListener("click", async () => { loginButton.disabled = true; setStatus("dashboard-login-status", "処理中…"); try { await login(); } catch (error) { errorLog("login_failed", error); setStatus("dashboard-login-status", error.message, "error"); } finally { loginButton.disabled = false; } });
-    if (localStorage.getItem(DATA_KEY_STORAGE)) { try { await load(); log("existing_session_loaded", { httpOnlySession: true }); } catch (error) { errorLog("session_load_failed", error); clearSession(); } }
+    if (cookie(TOKEN_COOKIE) && cookie(SIGNATURE_COOKIE) && localStorage.getItem(DATA_KEY_STORAGE)) { try { await load(); log("existing_session_loaded"); } catch (error) { errorLog("session_load_failed", error); clearSession(); } }
     log("ready", { managementOriginAllowed: isManagementOrigin() });
   }
   try { init(); } catch (error) { errorLog("init_failed", error); }

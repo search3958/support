@@ -7,6 +7,8 @@
   const OF8_CLIENT_CONFIG = Object.freeze({
     apiBase: "https://sentaro-0f8-accounts.takesen2278.workers.dev",
     popupUrl: "https://YOUR-ACCOUNT-SERVICE-PAGE.example/account-login.html",
+    cookieToken: "of8_access_token",
+    cookieSignature: "of8_access_signature",
     storageKey: "__of8_data_access_key_v2__",
     storageDataKey: "__of8_data_cache_v2__",
     popupWidth: 460,
@@ -46,6 +48,22 @@
     return bytes;
   }
 
+  function getCookie(name) {
+    const prefix = `${encodeURIComponent(name)}=`;
+    const item = document.cookie.split("; ").find((entry) => entry.startsWith(prefix));
+    return item ? decodeURIComponent(item.slice(prefix.length)) : "";
+  }
+
+  function setCookie(name, value, maxAgeSeconds = 259200) {
+    document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=${maxAgeSeconds}; Path=/; Secure; SameSite=Lax`;
+    clientLog("cookie_saved", { name });
+  }
+
+  function deleteCookie(name) {
+    document.cookie = `${encodeURIComponent(name)}=; Max-Age=0; Path=/; Secure; SameSite=Lax`;
+    clientLog("cookie_deleted", { name });
+  }
+
   function saveAccessKey(value) {
     base64UrlBytes(value);
     localStorage.setItem(OF8_CLIENT_CONFIG.storageKey, value);
@@ -60,9 +78,25 @@
   }
 
   function clearLocalSession() {
+    deleteCookie(OF8_CLIENT_CONFIG.cookieToken);
+    deleteCookie(OF8_CLIENT_CONFIG.cookieSignature);
     localStorage.removeItem(OF8_CLIENT_CONFIG.storageKey);
     localStorage.removeItem(`${OF8_CLIENT_CONFIG.storageDataKey}:${getOrigin()}`);
     clientLog("local_session_cleared");
+  }
+
+  function decodeTokenId(token) {
+    const parts = String(token).split(".");
+    if (parts.length !== 6 || parts[0] !== "v1") throw new Error("Invalid access token.");
+    const padded = parts[3] + "=".repeat((4 - (parts[3].length % 4)) % 4);
+    return td.decode(base64UrlBytesForToken(padded));
+  }
+
+  function base64UrlBytesForToken(value) {
+    const binary = atob(value.replace(/-/g, "+").replace(/_/g, "/"));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
   }
 
   function openPopup() {
@@ -93,16 +127,18 @@
       function onMessage(event) {
         if (event.origin !== expectedOrigin || event.source !== popup) return;
         const message = event.data;
-        if (!message || message.type !== "OF8_AUTH_RESULT" || message.version !== 3) return;
+        if (!message || message.type !== "OF8_AUTH_RESULT" || message.version !== 2) return;
         if (message.state !== state) return;
-        if (typeof message.dataAccessKey !== "string") {
+        if (typeof message.accessToken !== "string" || typeof message.signature !== "string" || typeof message.dataAccessKey !== "string") {
           cleanup(); reject(new Error("Authentication response is malformed.")); return;
         }
         try { base64UrlBytes(message.dataAccessKey); } catch (error) { cleanup(); reject(error); return; }
         cleanup();
+        setCookie(OF8_CLIENT_CONFIG.cookieToken, message.accessToken);
+        setCookie(OF8_CLIENT_CONFIG.cookieSignature, message.signature);
         saveAccessKey(message.dataAccessKey);
-        clientLog("login_completed", { id: message.account?.id || "unknown", httpOnlySession: true });
-        resolve({ account: message.account });
+        clientLog("login_completed", { id: decodeTokenId(message.accessToken) });
+        resolve({ accessToken: message.accessToken, signature: message.signature, account: message.account });
       }
       window.addEventListener("message", onMessage);
     });
@@ -113,9 +149,13 @@
     const headers = new Headers(options.headers || {});
     headers.set("Accept", "application/json");
     if (options.body !== undefined) headers.set("Content-Type", "application/json");
+    const token = getCookie(OF8_CLIENT_CONFIG.cookieToken);
+    const signature = getCookie(OF8_CLIENT_CONFIG.cookieSignature);
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    if (signature) headers.set("X-OF8-Signature", signature);
     if (options.dataAccess === true) headers.set("X-OF8-Data-Access-Key", getAccessKey());
     const response = await fetch(`${OF8_CLIENT_CONFIG.apiBase}${path}`, {
-      method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), cache: "no-store", credentials: "include",
+      method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), cache: "no-store", credentials: "omit",
     });
     const text = await response.text();
     let data;
@@ -125,7 +165,11 @@
       clientError("request_failed", new Error(message), { path, status: response.status, code: data?.error?.code });
       throw new Error(message);
     }
-    if (data.expiresAt) clientLog("session_state_received", { path, expiresAt: data.expiresAt, httpOnlySession: true });
+    if (data.token && data.signature) {
+      setCookie(OF8_CLIENT_CONFIG.cookieToken, data.token);
+      setCookie(OF8_CLIENT_CONFIG.cookieSignature, data.signature);
+      clientLog("token_rotated", { path });
+    }
     return data;
   }
 
@@ -166,10 +210,13 @@
   }
 
   async function logout() {
-    try { await request("/v1/auth/logout", { method: "POST", body: {} }); }
-    catch (error) { clientError("logout_request_failed", error); }
+    const token = getCookie(OF8_CLIENT_CONFIG.cookieToken);
+    if (token) {
+      try { await request("/v1/auth/logout", { method: "POST", body: {} }); }
+      catch (error) { clientError("logout_request_failed", error); }
+    }
     clearLocalSession();
-    clientLog("logout_completed", { httpOnlySession: true });
+    clientLog("logout_completed");
   }
 
   async function getItem(key) {
@@ -204,8 +251,11 @@
   async function getUsage() { return usage(); }
 
   async function isLoggedIn() {
+    const token = getCookie(OF8_CLIENT_CONFIG.cookieToken);
+    const signature = getCookie(OF8_CLIENT_CONFIG.cookieSignature);
+    if (!token || !signature) return false;
     try {
-      const result = await request("/v1/auth/introspect", { method: "POST", body: {} });
+      const result = await request("/v1/auth/introspect", { method: "POST", body: { token, signature } });
       return result.valid === true;
     } catch (error) { clientError("session_check_failed", error); return false; }
   }
