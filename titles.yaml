@@ -22,6 +22,14 @@ docs/[LANGUAGE]/saetab_for_chrome_setup.html:
   - "SaeTab for Chrome 安装指南"
   - "SaeTab for Chrome 安裝指南"
 
+tech/0f8-account/index.html:
+  - "0F8 Accounts 開発者向けドキュメント"
+  - "0F8 Accounts Developer Documentation"
+  - "0F8 Accounts 개발자 문서"
+  - "0F8 Accounts 開発者文書"
+  - "0F8 Accounts 开发者文档"
+  - "0F8 Accounts 開發者文件"
+
 filename:
   - ja
   - en
