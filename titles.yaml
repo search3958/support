@@ -1,4 +1,4 @@
-ad_error:
+docs/[LANGUAGE]/ad_error.html:
   - "「利用規約に違反しています」と表示される場合"
   - "When You See \"You Are in Violation of the Terms of Use\""
   - "\"이용약관을 위반했습니다\"가 표시되는 경우"
@@ -6,7 +6,7 @@ ad_error:
   - "当显示“违反使用条款”时"
   - "當顯示「違反使用條款」時"
 
-newtab_setup:
+docs/[LANGUAGE]/newtab_setup.html:
   - "Newtab の設定方法"
   - "How to Set Up Newtab"
   - "Newtab 설정 방법"
@@ -14,7 +14,7 @@ newtab_setup:
   - "Newtab 设置方法"
   - "Newtab 設定方法"
 
-saetab_for_chrome_setup:
+docs/[LANGUAGE]/saetab_for_chrome_setup.html:
   - "SaeTab for Chrome インストール手順"
   - "SaeTab for Chrome Installation Guide"
   - "SaeTab for Chrome 설치 방법"

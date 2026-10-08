@@ -157,7 +157,7 @@ def build_titles_yaml() -> str:
     lines = []
     for md_path in sorted((SRC / "ja").glob("*.md")):
         slug = md_path.stem
-        lines.append(f"{slug}:")
+        lines.append(f"docs/[LANGUAGE]/{slug}.html:")
         for code in title_lang_order:
             target = SRC / code / f"{slug}.md"
             title = first_heading(target.read_text(encoding="utf-8")) if target.exists() else ""

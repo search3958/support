@@ -318,7 +318,7 @@
 
           if (!line.trim() || line.trimStart().startsWith("#")) continue;
 
-          const top = /^([A-Za-z0-9_-]+):$/.exec(line.trim());
+          const top = /^([^:]+):$/.exec(line.trim());
           if (top) {
             currentKey = top[1];
             result[currentKey] = [];
@@ -395,24 +395,29 @@
         }
 
         for (const slug of slugs) {
-          const titles = Array.isArray(titleMap[slug]) ? titleMap[slug] : [];
-          const title = titles[index] || titles[fallbackIndex] || slug;
+            const titles = Array.isArray(titleMap[slug]) ? titleMap[slug] : [];
+            const title = titles[index] || titles[fallbackIndex] || slug;
 
-          const link = document.createElement("a");
-          link.className = "item";
-          link.href = `./docs/${lang}/${encodeURIComponent(slug)}.html`;
+            const resolvedSlug = slug.replace("[LANGUAGE]", lang);
 
-          const strong = document.createElement("strong");
-          strong.textContent = title;
+            const link = document.createElement("a");
+            link.className = "item";
+            const parts = resolvedSlug.split("/");
+            const fileName = parts.pop();
+            link.href = `./${parts.join("/")}/${encodeURIComponent(fileName)}`;
 
-          const span = document.createElement("span");
-          span.textContent =
-            ARTICLE_DESCRIPTIONS[slug]?.[lang] ??
-            ARTICLE_DESCRIPTIONS[slug]?.ja ??
-            slug;
+            const strong = document.createElement("strong");
+            strong.textContent = title;
 
-          link.append(strong, span);
-          list.appendChild(link);
+            const slugName = slug.split("/").pop().replace(".html", "");
+            const span = document.createElement("span");
+            span.textContent =
+                ARTICLE_DESCRIPTIONS[slugName]?.[lang] ??
+                ARTICLE_DESCRIPTIONS[slugName]?.ja ??
+                slugName;
+
+            link.append(strong, span);
+            list.appendChild(link);
         }
       }
 
@@ -421,7 +426,7 @@
         applyLanguage(lang);
 
         try {
-          const response = await fetch("./docs/titles.yaml", { cache: "no-cache" });
+          const response = await fetch("titles.yaml", { cache: "no-cache" });
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
           const yamlText = await response.text();
