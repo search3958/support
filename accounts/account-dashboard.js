@@ -679,70 +679,122 @@ import {styles as typescaleStyles} from "@material/web/typography/md-typescale-s
   }
 
   async function login() {
-    const popupUrl = new URL("account-login.html", location.href);
-    popupUrl.searchParams.set("origin", location.origin);
-    popupUrl.searchParams.set(
-      "state",
-      base64Url(crypto.getRandomValues(new Uint8Array(24))),
-    );
+    const state = base64Url(crypto.getRandomValues(new Uint8Array(24)));
+    const popupUrl = new URL("https://search3958.github.io/support/accounts/account-login.html");
+    const returnOrigin = location.origin;
+    popupUrl.searchParams.set("origin", returnOrigin);
+    popupUrl.searchParams.set("state", state);
 
-    log("login_popup_opening", {origin: location.origin});
+    if (popupUrl.origin === returnOrigin) {
+      console.error("[0f8-dashboard] login_popup_invalid_origin", {popupOrigin: popupUrl.origin, returnOrigin});
+      throw new Error("ログイン画面の配信元がアカウントサービスと一致していません。");
+    }
 
-    const popup = window.open(
-      popupUrl.toString(),
-      "of8-dashboard-login",
-      "popup=yes,width=460,height=720",
-    );
+    log("login_popup_opening", {origin: returnOrigin, popupOrigin: popupUrl.origin});
 
+    const features = "popup=yes,width=460,height=720";
+    const popup = window.open("about:blank", `of8-dashboard-login-${state}`, features);
     if (!popup) {
+      console.error("[0f8-dashboard] login_popup_blocked");
       throw new Error("ログインポップアップがブロックされました。");
     }
 
-    const result = await new Promise((resolve, reject) => {
-      const expectedOrigin = location.origin;
-      const state = popupUrl.searchParams.get("state");
-      const timeout = setTimeout(() => {
-        window.removeEventListener("message", handler);
-        reject(new Error("ログインがタイムアウトしました。"));
-      }, 5 * 60 * 1000);
+    const resultPromise = new Promise((resolve, reject) => {
+      const expectedOrigin = popupUrl.origin;
+      let settled = false;
+      let closeTimer = null;
+      let timeout = null;
 
-      function finishError(message) {
-        clearTimeout(timeout);
+      function cleanup() {
+        if (closeTimer !== null) window.clearInterval(closeTimer);
+        if (timeout !== null) window.clearTimeout(timeout);
         window.removeEventListener("message", handler);
+      }
+
+      function fail(message, details = {}) {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        errorLog("login_popup_failed", new Error(message), details);
         reject(new Error(message));
       }
 
       function handler(event) {
-        if (event.origin !== expectedOrigin || event.source !== popup) {
-          return;
-        }
+        if (event.origin !== expectedOrigin || event.source !== popup) return;
 
         const message = event.data;
-        if (!message || message.type !== "OF8_AUTH_RESULT" || message.version !== 2 || message.state !== state) {
-          return;
-        }
+        if (!message || message.type !== "OF8_AUTH_RESULT" || message.version !== 2 || message.state !== state) return;
 
         if (
           typeof message.accessToken !== "string" ||
           typeof message.signature !== "string" ||
           typeof message.dataAccessKey !== "string"
         ) {
-          finishError("認証結果が不正です。");
+          fail("認証結果が不正です。");
           return;
         }
 
-        clearTimeout(timeout);
-        window.removeEventListener("message", handler);
+        try {
+          const decodedId = decodeTokenId(message.accessToken);
+          // Data access keyも形式だけでなく長さまで検証します。
+          const decoded = atob(message.dataAccessKey.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (message.dataAccessKey.length % 4)) % 4));
+          if (decoded.length !== 32) throw new Error("データアクセスキーの長さが不正です。");
+          log("auth_result_received", {origin: event.origin, id: decodedId});
+        } catch (error) {
+          fail(error instanceof Error ? error.message : "認証結果が不正です。");
+          return;
+        }
+
+        settled = true;
+        cleanup();
+        try { popup.close(); log("login_popup_closed_after_result"); }
+        catch (error) { errorLog("login_popup_close_failed", error); }
         resolve(message);
       }
 
       window.addEventListener("message", handler);
+
+      closeTimer = window.setInterval(() => {
+        if (!popup.closed) return;
+        fail("ログイン画面が閉じられました。", {popupClosed: true});
+      }, 100);
+
+      timeout = window.setTimeout(() => {
+        try { popup.close(); } catch (error) { errorLog("login_popup_close_failed", error); }
+        fail("ログインウィンドウがタイムアウトしました。", {timeout: true});
+      }, 5 * 60 * 1000);
+
+      log("login_popup_monitoring_started");
     });
+
+    try {
+      // message監視を先に登録してから0F8ログイン画面へ遷移させます。
+      popup.location.replace(popupUrl.toString());
+      log("login_popup_navigated", {popupOrigin: popupUrl.origin});
+    } catch (error) {
+      try { popup.close(); } catch (closeError) { errorLog("login_popup_close_failed", closeError); }
+      errorLog("login_popup_navigation_failed", error, {url: popupUrl.toString()});
+      throw new Error("ログイン画面を開けませんでした。");
+    }
+
+    const result = await resultPromise;
 
     setCookie(TOKEN_COOKIE, result.accessToken);
     setCookie(SIGNATURE_COOKIE, result.signature);
     localStorage.setItem(DATA_KEY_STORAGE, result.dataAccessKey);
-    log("login_completed");
+
+    if (sessionCookie(TOKEN_COOKIE, LEGACY_TOKEN_COOKIE) !== result.accessToken ||
+        sessionCookie(SIGNATURE_COOKIE, LEGACY_SIGNATURE_COOKIE) !== result.signature) {
+      console.error("[0f8-dashboard] login_cookie_persist_failed");
+      throw new Error("認証情報を保存できませんでした。Cookie設定を確認してください。");
+    }
+
+    if (localStorage.getItem(DATA_KEY_STORAGE) !== result.dataAccessKey) {
+      console.error("[0f8-dashboard] login_data_key_persist_failed");
+      throw new Error("データアクセスキーを保存できませんでした。");
+    }
+
+    log("login_completed", {cookieSaved: true, dataAccessKeySaved: true});
     await load();
   }
 

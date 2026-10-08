@@ -6,7 +6,7 @@
 
   const OF8_CLIENT_CONFIG = Object.freeze({
     apiBase: "https://sentaro-0f8-accounts.takesen2278.workers.dev",
-    popupUrl: "https://YOUR-ACCOUNT-SERVICE-PAGE.example/account-login.html",
+    popupUrl: "https://search3958.github.io/support/accounts/account-login.html",
     cookieToken: "__Host-of8_access_token",
     cookieSignature: "__Host-of8_access_signature",
     legacyCookieToken: "of8_access_token",
@@ -109,48 +109,135 @@
     return bytes;
   }
 
-  function openPopup() {
+  function createLoginState() {
     const stateBytes = crypto.getRandomValues(new Uint8Array(24));
     let binary = "";
     for (let i = 0; i < stateBytes.length; i++) binary += String.fromCharCode(stateBytes[i]);
-    const state = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+
+  function buildLoginUrl(state) {
     const origin = getOrigin();
-    sessionStorage.setItem("__of8_login_state_v2__", state);
     const url = new URL(OF8_CLIENT_CONFIG.popupUrl);
     url.searchParams.set("origin", origin);
     url.searchParams.set("state", state);
-    const left = Math.max(0, Math.round((screen.width - OF8_CLIENT_CONFIG.popupWidth) / 2));
-    const top = Math.max(0, Math.round((screen.height - OF8_CLIENT_CONFIG.popupHeight) / 2));
-    const popup = window.open(url.toString(), "of8-account-login", `popup=yes,width=${OF8_CLIENT_CONFIG.popupWidth},height=${OF8_CLIENT_CONFIG.popupHeight},left=${left},top=${top}`);
-    if (!popup) throw new Error("Login popup was blocked by the browser.");
-    clientLog("login_popup_opened", { origin });
-    return popup;
+    if (url.origin === origin) {
+      console.error("[0f8-client] login_popup_invalid_origin", { popupOrigin: url.origin, origin });
+      throw new Error("ログイン画面の配信元がアカウントサービスと一致していません。");
+    }
+    return url;
   }
 
-  function waitForAuthResult(popup) {
+  function openPopup() {
+    const state = createLoginState();
+    const url = buildLoginUrl(state);
+    const origin = getOrigin();
+    sessionStorage.setItem("__of8_login_state_v2__", state);
+    const left = Math.max(0, Math.round((screen.width - OF8_CLIENT_CONFIG.popupWidth) / 2));
+    const top = Math.max(0, Math.round((screen.height - OF8_CLIENT_CONFIG.popupHeight) / 2));
+    const features = `popup=yes,width=${OF8_CLIENT_CONFIG.popupWidth},height=${OF8_CLIENT_CONFIG.popupHeight},left=${left},top=${top}`;
+    const windowName = `of8-account-login-${state}`;
+
+    // 先に同一オリジンの空ウィンドウを作り、受信監視を開始してから0F8ログイン画面へ遷移させます。
+    // これにより非常に高速なポップアップ表示でもpostMessageの受信準備が遅れる競合を避けます。
+    const popup = window.open("about:blank", windowName, features);
+    if (!popup) {
+      sessionStorage.removeItem("__of8_login_state_v2__");
+      console.error("[0f8-client] login_popup_blocked");
+      throw new Error("Login popup was blocked by the browser.");
+    }
+
+    clientLog("login_popup_opened", { origin, popupOrigin: url.origin });
+    return { popup, state, url };
+  }
+
+  function waitForAuthResult(popup, state) {
     return new Promise((resolve, reject) => {
       const expectedOrigin = new URL(OF8_CLIENT_CONFIG.popupUrl).origin;
-      const state = sessionStorage.getItem("__of8_login_state_v2__");
-      if (!state) { reject(new Error("Login state is missing.")); return; }
-      const timeout = setTimeout(() => { cleanup(); reject(new Error("Login window timed out.")); }, 5 * 60 * 1000);
-      function cleanup() { clearTimeout(timeout); window.removeEventListener("message", onMessage); sessionStorage.removeItem("__of8_login_state_v2__"); }
+      if (!popup || typeof popup.closed !== "boolean") {
+        reject(new Error("Login popup handle is invalid."));
+        return;
+      }
+
+      let settled = false;
+      let closeTimer = null;
+      let timeout = null;
+
+      function cleanup(removeState = true) {
+        if (closeTimer !== null) window.clearInterval(closeTimer);
+        if (timeout !== null) window.clearTimeout(timeout);
+        window.removeEventListener("message", onMessage);
+        if (removeState) sessionStorage.removeItem("__of8_login_state_v2__");
+      }
+
+      function fail(message, details = {}) {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        clientError("login_popup_failed", new Error(message), details);
+        reject(new Error(message));
+      }
+
+      function succeed(message) {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        try {
+          popup.close();
+          clientLog("login_popup_closed_after_result");
+        } catch (error) {
+          clientError("login_popup_close_failed", error);
+        }
+        setCookie(OF8_CLIENT_CONFIG.cookieToken, message.accessToken);
+        setCookie(OF8_CLIENT_CONFIG.cookieSignature, message.signature);
+        saveAccessKey(message.dataAccessKey);
+        const savedToken = getSessionCookie(OF8_CLIENT_CONFIG.cookieToken, OF8_CLIENT_CONFIG.legacyCookieToken);
+        const savedSignature = getSessionCookie(OF8_CLIENT_CONFIG.cookieSignature, OF8_CLIENT_CONFIG.legacyCookieSignature);
+        if (savedToken !== message.accessToken || savedSignature !== message.signature) {
+          console.error("[0f8-client] login_cookie_persist_failed", {
+            tokenSaved: Boolean(savedToken),
+            signatureSaved: Boolean(savedSignature),
+          });
+          reject(new Error("認証情報をこのサービスに保存できませんでした。Cookie設定を確認してください。"));
+          return;
+        }
+        clientLog("login_completed", { id: decodeTokenId(message.accessToken), cookieSaved: true });
+        resolve({ accessToken: message.accessToken, signature: message.signature, account: message.account });
+      }
+
       function onMessage(event) {
         if (event.origin !== expectedOrigin || event.source !== popup) return;
         const message = event.data;
         if (!message || message.type !== "OF8_AUTH_RESULT" || message.version !== 2) return;
         if (message.state !== state) return;
         if (typeof message.accessToken !== "string" || typeof message.signature !== "string" || typeof message.dataAccessKey !== "string") {
-          cleanup(); reject(new Error("Authentication response is malformed.")); return;
+          fail("Authentication response is malformed.");
+          return;
         }
-        try { base64UrlBytes(message.dataAccessKey); } catch (error) { cleanup(); reject(error); return; }
-        cleanup();
-        setCookie(OF8_CLIENT_CONFIG.cookieToken, message.accessToken);
-        setCookie(OF8_CLIENT_CONFIG.cookieSignature, message.signature);
-        saveAccessKey(message.dataAccessKey);
-        clientLog("login_completed", { id: decodeTokenId(message.accessToken) });
-        resolve({ accessToken: message.accessToken, signature: message.signature, account: message.account });
+        try {
+          base64UrlBytes(message.dataAccessKey);
+          decodeTokenId(message.accessToken);
+        } catch (error) {
+          fail(error instanceof Error ? error.message : "認証結果が不正です。");
+          return;
+        }
+        clientLog("auth_result_received", { origin: event.origin });
+        succeed(message);
       }
+
       window.addEventListener("message", onMessage);
+
+      closeTimer = window.setInterval(() => {
+        if (!popup.closed) return;
+        fail("ログイン画面が閉じられました。", { popupClosed: true });
+      }, 100);
+
+      timeout = window.setTimeout(() => {
+        try { popup.close(); } catch (error) { clientError("login_popup_close_failed", error); }
+        fail("ログインウィンドウがタイムアウトしました。", { timeout: true });
+      }, 5 * 60 * 1000);
+
+      clientLog("login_popup_monitoring_started");
     });
   }
 
@@ -215,8 +302,19 @@
   }
 
   async function login() {
-    const popup = openPopup();
-    return waitForAuthResult(popup);
+    const { popup, state, url } = openPopup();
+    const resultPromise = waitForAuthResult(popup, state);
+    try {
+      // message監視を先に登録してから配信元へ遷移します。
+      popup.location.replace(url.toString());
+      clientLog("login_popup_navigated", { popupOrigin: url.origin });
+    } catch (error) {
+      try { popup.close(); } catch (closeError) { clientError("login_popup_close_failed", closeError); }
+      sessionStorage.removeItem("__of8_login_state_v2__");
+      clientError("login_popup_navigation_failed", error, { url: url.toString() });
+      throw new Error("ログイン画面を開けませんでした。");
+    }
+    return resultPromise;
   }
 
   async function logout() {

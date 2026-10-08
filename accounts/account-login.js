@@ -24,9 +24,19 @@
     const returnOrigin = validateReturnOrigin();
     if (!window.opener || window.opener.closed) { log("no_opener", { returnOrigin }); setTimeout(() => window.close(), 500); return; }
     const payload = { type: "OF8_AUTH_RESULT", version: 2, state, accessToken: result.token, signature: result.signature, dataAccessKey: result.dataAccessKey, account: result.account };
-    window.opener.postMessage(payload, returnOrigin);
-    log("auth_result_sent", { returnOrigin, id: result.account?.id });
-    setTimeout(() => window.close(), 250);
+    try {
+      window.opener.postMessage(payload, returnOrigin);
+      log("auth_result_sent", { returnOrigin, id: result.account?.id });
+      setTimeout(() => {
+        if (!window.closed) {
+          log("closing_login_popup_after_result");
+          window.close();
+        }
+      }, 250);
+    } catch (error) {
+      errorLog("auth_result_send_failed", error, { returnOrigin });
+      setStatus(required("login-status"), "認証結果を元のサービスへ返せませんでした。", "error");
+    }
   }
   async function submit(path, form, statusElement) {
     const button = form.querySelector("button[type='submit']");
