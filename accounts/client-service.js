@@ -7,8 +7,10 @@
   const OF8_CLIENT_CONFIG = Object.freeze({
     apiBase: "https://sentaro-0f8-accounts.takesen2278.workers.dev",
     popupUrl: "https://YOUR-ACCOUNT-SERVICE-PAGE.example/account-login.html",
-    cookieToken: "of8_access_token",
-    cookieSignature: "of8_access_signature",
+    cookieToken: "__Host-of8_access_token",
+    cookieSignature: "__Host-of8_access_signature",
+    legacyCookieToken: "of8_access_token",
+    legacyCookieSignature: "of8_access_signature",
     storageKey: "__of8_data_access_key_v2__",
     storageDataKey: "__of8_data_cache_v2__",
     popupWidth: 460,
@@ -50,17 +52,23 @@
 
   function getCookie(name) {
     const prefix = `${encodeURIComponent(name)}=`;
-    const item = document.cookie.split("; ").find((entry) => entry.startsWith(prefix));
-    return item ? decodeURIComponent(item.slice(prefix.length)) : "";
+    const item = document.cookie.split(";").find((entry) => entry.trim().startsWith(prefix));
+    if (!item) return "";
+    try { return decodeURIComponent(item.trim().slice(prefix.length)); }
+    catch (error) { clientError("cookie_decode_failed", error, { name }); return ""; }
+  }
+
+  function getSessionCookie(name, legacyName) {
+    return getCookie(name) || getCookie(legacyName);
   }
 
   function setCookie(name, value, maxAgeSeconds = 259200) {
-    document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=${maxAgeSeconds}; Path=/; Secure; SameSite=Lax`;
+    document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=${maxAgeSeconds}; Path=/; Secure; SameSite=Strict`;
     clientLog("cookie_saved", { name });
   }
 
   function deleteCookie(name) {
-    document.cookie = `${encodeURIComponent(name)}=; Max-Age=0; Path=/; Secure; SameSite=Lax`;
+    document.cookie = `${encodeURIComponent(name)}=; Max-Age=0; Path=/; Secure; SameSite=Strict`;
     clientLog("cookie_deleted", { name });
   }
 
@@ -80,6 +88,8 @@
   function clearLocalSession() {
     deleteCookie(OF8_CLIENT_CONFIG.cookieToken);
     deleteCookie(OF8_CLIENT_CONFIG.cookieSignature);
+    deleteCookie(OF8_CLIENT_CONFIG.legacyCookieToken);
+    deleteCookie(OF8_CLIENT_CONFIG.legacyCookieSignature);
     localStorage.removeItem(OF8_CLIENT_CONFIG.storageKey);
     localStorage.removeItem(`${OF8_CLIENT_CONFIG.storageDataKey}:${getOrigin()}`);
     clientLog("local_session_cleared");
@@ -149,8 +159,8 @@
     const headers = new Headers(options.headers || {});
     headers.set("Accept", "application/json");
     if (options.body !== undefined) headers.set("Content-Type", "application/json");
-    const token = getCookie(OF8_CLIENT_CONFIG.cookieToken);
-    const signature = getCookie(OF8_CLIENT_CONFIG.cookieSignature);
+    const token = getSessionCookie(OF8_CLIENT_CONFIG.cookieToken, OF8_CLIENT_CONFIG.legacyCookieToken);
+    const signature = getSessionCookie(OF8_CLIENT_CONFIG.cookieSignature, OF8_CLIENT_CONFIG.legacyCookieSignature);
     if (token) headers.set("Authorization", `Bearer ${token}`);
     if (signature) headers.set("X-OF8-Signature", signature);
     if (options.dataAccess === true) headers.set("X-OF8-Data-Access-Key", getAccessKey());
@@ -240,7 +250,14 @@
     clientLog("item_removed", { key: normalizedKey, existed });
   }
 
-  async function clear() { return saveWholeObject({ v: 1, items: {} }); }
+  async function clear() {
+    const result = await request("/v1/data", { method: "DELETE", dataAccess: true });
+    localStorage.removeItem(domainDataCacheKey());
+    clientLog("current_domain_data_deleted", { deleted: result.deleted === true });
+    return { v: 1, items: {} };
+  }
+
+  async function deleteDomainData() { return clear(); }
   async function keys() { return Object.keys(await syncFromServer().then((data) => data.items)); }
   async function length() { return (await keys()).length; }
   async function key(index) { return (await keys())[index] ?? null; }
@@ -251,8 +268,8 @@
   async function getUsage() { return usage(); }
 
   async function isLoggedIn() {
-    const token = getCookie(OF8_CLIENT_CONFIG.cookieToken);
-    const signature = getCookie(OF8_CLIENT_CONFIG.cookieSignature);
+    const token = getSessionCookie(OF8_CLIENT_CONFIG.cookieToken, OF8_CLIENT_CONFIG.legacyCookieToken);
+    const signature = getSessionCookie(OF8_CLIENT_CONFIG.cookieSignature, OF8_CLIENT_CONFIG.legacyCookieSignature);
     if (!token || !signature) return false;
     try {
       const result = await request("/v1/auth/introspect", { method: "POST", body: { token, signature } });
@@ -261,7 +278,7 @@
   }
 
   window.OF8Account = Object.freeze({
-    login, logout, getItem, setItem, removeItem, clear, keys, length, key,
+    login, logout, getItem, setItem, removeItem, clear, deleteDomainData, keys, length, key,
     accountInfo, getAccountInfo, usage, getUsage, isLoggedIn, sync: syncFromServer, constants: OF8_CLIENT_CONFIG,
     readCache,
   });

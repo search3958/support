@@ -3,17 +3,20 @@
   "use strict";
 
   const API_BASE = "https://sentaro-0f8-accounts.takesen2278.workers.dev";
-  const TOKEN_COOKIE = "of8_access_token";
-  const SIGNATURE_COOKIE = "of8_access_signature";
+  const TOKEN_COOKIE = "__Host-of8_access_token";
+  const SIGNATURE_COOKIE = "__Host-of8_access_signature";
+  const LEGACY_TOKEN_COOKIE = "of8_access_token";
+  const LEGACY_SIGNATURE_COOKIE = "of8_access_signature";
   const DATA_KEY_STORAGE = "__of8_data_access_key_v2__";
   const MANAGEMENT_ORIGIN = "https://search3958.github.io";
 
   function log(event, details = {}) { console.log("[0f8-dashboard]", event, details); }
   function errorLog(event, error, details = {}) { console.error("[0f8-dashboard]", event, error instanceof Error ? error.message : String(error), details); }
   function required(id) { const element = document.getElementById(id); if (!element) { console.error(`[0f8-dashboard] Required element not found: #${id}`); throw new Error(`Required element not found: #${id}`); } return element; }
-  function cookie(name) { const prefix = `${encodeURIComponent(name)}=`; const item = document.cookie.split("; ").find((entry) => entry.startsWith(prefix)); return item ? decodeURIComponent(item.slice(prefix.length)) : ""; }
-  function setCookie(name, value) { document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=259200; Path=/; Secure; SameSite=Lax`; }
-  function delCookie(name) { document.cookie = `${encodeURIComponent(name)}=; Max-Age=0; Path=/; Secure; SameSite=Lax`; }
+  function cookie(name) { const prefix = `${encodeURIComponent(name)}=`; const item = document.cookie.split("; ").find((entry) => entry.trim().startsWith(prefix)); if (!item) return ""; try { return decodeURIComponent(item.trim().slice(prefix.length)); } catch (error) { errorLog("cookie_decode_failed", error, { name }); return ""; } }
+  function sessionCookie(name, legacyName) { const value = cookie(name); if (value) return value; const legacy = cookie(legacyName); if (legacy) log("legacy_cookie_detected", { name: legacyName }); return legacy; }
+  function setCookie(name, value) { document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=259200; Path=/; Secure; SameSite=Strict`; log("cookie_saved", { name }); }
+  function delCookie(name) { document.cookie = `${encodeURIComponent(name)}=; Max-Age=0; Path=/; Secure; SameSite=Strict`; log("cookie_deleted", { name }); }
   function setStatus(id, message, kind = "") { const element = required(id); element.textContent = message; element.dataset.kind = kind; }
   function base64Url(bytes) { let binary = ""; for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""); }
   async function fileToBase64Url(file) { return base64Url(new Uint8Array(await file.arrayBuffer())); }
@@ -26,11 +29,11 @@
     });
   }
   function isManagementOrigin() { return location.origin.toLowerCase() === MANAGEMENT_ORIGIN; }
-  function clearSession() { delCookie(TOKEN_COOKIE); delCookie(SIGNATURE_COOKIE); localStorage.removeItem(DATA_KEY_STORAGE); }
+  function clearSession() { delCookie(TOKEN_COOKIE); delCookie(SIGNATURE_COOKIE); delCookie(LEGACY_TOKEN_COOKIE); delCookie(LEGACY_SIGNATURE_COOKIE); localStorage.removeItem(DATA_KEY_STORAGE); log("session_cleared"); }
 
   async function api(path, options = {}) {
     const headers = new Headers({ Accept: "application/json", ...(options.headers || {}) });
-    const token = cookie(TOKEN_COOKIE); const signature = cookie(SIGNATURE_COOKIE);
+    const token = sessionCookie(TOKEN_COOKIE, LEGACY_TOKEN_COOKIE); const signature = sessionCookie(SIGNATURE_COOKIE, LEGACY_SIGNATURE_COOKIE);
     if (token) headers.set("Authorization", `Bearer ${token}`);
     if (signature) headers.set("X-OF8-Signature", signature);
     if (options.body !== undefined) headers.set("Content-Type", "application/json");
@@ -50,7 +53,7 @@
     required("login-card").classList.add("account-hidden"); required("dashboard-card").classList.remove("account-hidden");
     required("account-id").textContent = `ID: ${account.id}`; required("account-name").value = account.name;
     const icon = required("account-icon");
-    if (account.icon) { icon.src = `data:${account.iconMimeType || "image/png"};base64,${account.icon}`; icon.hidden = false; } else { icon.removeAttribute("src"); icon.hidden = true; }
+    if (account.icon && typeof account.icon === "string") { icon.src = `data:${account.iconMimeType || "image/png"};base64,${account.icon}`; icon.hidden = false; log("icon_loaded"); } else { icon.removeAttribute("src"); icon.hidden = true; log("icon_not_set"); }
     const allowed = isManagementOrigin();
     required("save-profile").disabled = !allowed; required("remove-icon").disabled = !allowed; required("account-icon-file").disabled = !allowed; required("account-name").disabled = !allowed;
     setStatus("management-origin-status", allowed ? "プロフィール編集: search3958.github.io として許可" : "プロフィール・アイコン編集は search3958.github.io からのみ許可されます。", allowed ? "success" : "error");
@@ -71,9 +74,32 @@
       const domain = document.createElement("td"); domain.textContent = row.domain;
       const chars = document.createElement("td"); chars.textContent = `${row.encryptedChars.toLocaleString()}文字`;
       const bytes = document.createElement("td"); bytes.textContent = formatBytes(row.encryptedBytes);
-      tr.append(domain, chars, bytes); tbody.appendChild(tr);
+      const action = document.createElement("td");
+      const button = document.createElement("button");
+      button.className = "account-button secondary domain-delete-button";
+      button.type = "button";
+      button.textContent = "削除";
+      button.disabled = !isManagementOrigin();
+      button.title = isManagementOrigin() ? "このドメインの保存データをすべて削除" : "管理画面からのみ削除できます";
+      button.addEventListener("click", async () => {
+        if (!isManagementOrigin()) { console.error("[0f8-dashboard] Domain delete is unavailable outside management origin."); return; }
+        if (!window.confirm(`${row.domain} の保存データをすべて削除します。続行しますか？`)) return;
+        button.disabled = true;
+        try {
+          await api("/v1/account/domain", { method: "DELETE", body: { domain: row.domain } });
+          log("domain_deleted", { domain: row.domain });
+          await loadUsage();
+          setStatus("usage-status", `${row.domain} の保存データを削除しました。`, "success");
+        } catch (error) {
+          errorLog("domain_delete_failed", error, { domain: row.domain });
+          setStatus("usage-status", error.message, "error");
+          button.disabled = false;
+        }
+      });
+      action.appendChild(button);
+      tr.append(domain, chars, bytes, action); tbody.appendChild(tr);
     }
-    if (!usage.domains.length) { const tr = document.createElement("tr"); const td = document.createElement("td"); td.colSpan = 3; td.textContent = "保存データはありません。"; tr.appendChild(td); tbody.appendChild(tr); }
+    if (!usage.domains.length) { const tr = document.createElement("tr"); const td = document.createElement("td"); td.colSpan = 4; td.textContent = "保存データはありません。"; tr.appendChild(td); tbody.appendChild(tr); }
     setStatus("usage-status", `データ上限: ${usage.maxDataChars.toLocaleString()}文字`);
     log("usage_loaded", { domains: usage.domains.length, dataBytes: usage.dataBytes });
   }
@@ -116,6 +142,7 @@
   async function changePassword() {
     if (!isManagementOrigin()) throw new Error("パスワード変更は search3958.github.io からのみ許可されています。");
     const currentPassword = required("current-password").value; const newPassword = required("new-password").value;
+    if ([currentPassword, newPassword].some((value) => [...value].length < 8)) throw new Error("パスワードは8文字以上で入力してください。");
     await api("/v1/account/password", { method: "POST", body: { currentPassword, newPassword } });
     clearSession(); required("dashboard-card").classList.add("account-hidden"); required("login-card").classList.remove("account-hidden"); required("current-password").value = ""; required("new-password").value = "";
     setStatus("password-status", "パスワードを変更しました。全保存データも新しい鍵で再暗号化されています。", "success");
@@ -140,7 +167,7 @@
     required("refresh-usage").addEventListener("click", async () => { try { await loadUsage(); } catch (error) { errorLog("usage_refresh_failed", error); setStatus("usage-status", error.message, "error"); } });
     const loginButton = required("dashboard-login");
     loginButton.addEventListener("click", async () => { loginButton.disabled = true; setStatus("dashboard-login-status", "処理中…"); try { await login(); } catch (error) { errorLog("login_failed", error); setStatus("dashboard-login-status", error.message, "error"); } finally { loginButton.disabled = false; } });
-    if (cookie(TOKEN_COOKIE) && cookie(SIGNATURE_COOKIE) && localStorage.getItem(DATA_KEY_STORAGE)) { try { await load(); log("existing_session_loaded"); } catch (error) { errorLog("session_load_failed", error); clearSession(); } }
+    if (sessionCookie(TOKEN_COOKIE, LEGACY_TOKEN_COOKIE) && sessionCookie(SIGNATURE_COOKIE, LEGACY_SIGNATURE_COOKIE) && localStorage.getItem(DATA_KEY_STORAGE)) { try { await load(); log("existing_session_loaded"); } catch (error) { errorLog("session_load_failed", error); clearSession(); } }
     log("ready", { managementOriginAllowed: isManagementOrigin() });
   }
   try { init(); } catch (error) { errorLog("init_failed", error); }

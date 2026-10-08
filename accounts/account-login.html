@@ -26,7 +26,7 @@
         </div>
         <div class="account-field">
           <label for="login-password">パスワード</label>
-          <input id="login-password" name="password" type="password" maxlength="128" autocomplete="current-password" required>
+          <input id="login-password" name="password" type="password" minlength="8" maxlength="128" autocomplete="current-password" required>
         </div>
         <button class="account-button" type="submit">ログイン</button>
         <p id="login-status" class="account-status" aria-live="polite"></p>
@@ -43,7 +43,7 @@
         </div>
         <div class="account-field">
           <label for="register-password">パスワード</label>
-          <input id="register-password" name="password" type="password" maxlength="128" autocomplete="new-password" required>
+          <input id="register-password" name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
         </div>
         <button class="account-button" type="submit">アカウントを作成</button>
         <p id="register-status" class="account-status" aria-live="polite"></p>

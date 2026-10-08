@@ -35,6 +35,7 @@
     try {
       const formData = new FormData(form);
       const body = { id: String(formData.get("id") || "").trim(), password: String(formData.get("password") || ""), origin: validateReturnOrigin() };
+      if ([...body.password].length < 8) throw new Error("パスワードは8文字以上で入力してください。");
       if (path.endsWith("register")) body.name = String(formData.get("name") || "").trim();
       const result = await api(path, body);
       setStatus(statusElement, "認証に成功しました。", "success");

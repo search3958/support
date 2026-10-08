@@ -47,7 +47,7 @@
           <p id="usage-status" class="account-status" aria-live="polite"></p>
           <div class="usage-table-wrap">
             <table class="usage-table">
-              <thead><tr><th>ドメイン</th><th>Base122</th><th>容量</th></tr></thead>
+              <thead><tr><th>ドメイン</th><th>Base122</th><th>容量</th><th>操作</th></tr></thead>
               <tbody id="usage-domains"></tbody>
             </table>
           </div>
@@ -57,11 +57,11 @@
         <form id="password-form" class="dashboard-row" novalidate>
           <div class="account-field">
             <label for="current-password">現在のパスワード</label>
-            <input id="current-password" type="password" maxlength="128" autocomplete="current-password" required>
+            <input id="current-password" type="password" minlength="8" maxlength="128" autocomplete="current-password" required>
           </div>
           <div class="account-field">
             <label for="new-password">新しいパスワード</label>
-            <input id="new-password" type="password" maxlength="128" autocomplete="new-password" required>
+            <input id="new-password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
           </div>
           <button class="account-button" type="submit">パスワードを変更</button>
           <p id="password-status" class="account-status" aria-live="polite"></p>
