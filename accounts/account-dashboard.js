@@ -87,6 +87,42 @@ import {styles as typescaleStyles} from "@material/web/typography/md-typescale-s
     log("status_updated", {id, kind, message});
   }
 
+  const textDecoder = new TextDecoder();
+
+  function base64UrlBytesForToken(value) {
+    if (typeof value !== "string" || !/^[A-Za-z0-9_-]+$/.test(value)) {
+      throw new Error("アクセストークンの形式が不正です。");
+    }
+
+    const padded = value + "=".repeat((4 - (value.length % 4)) % 4);
+    let binary;
+    try {
+      binary = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
+    } catch (error) {
+      throw new Error("アクセストークンの形式が不正です。");
+    }
+
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  function decodeTokenId(token) {
+    const parts = String(token).split(".");
+    if (parts.length !== 6 || parts[0] !== "v1") {
+      throw new Error("アクセストークンの形式が不正です。");
+    }
+
+    const idBytes = base64UrlBytesForToken(parts[3]);
+    try {
+      return textDecoder.decode(idBytes);
+    } catch (error) {
+      throw new Error("アクセストークンのIDを読み取れませんでした。");
+    }
+  }
+
   function base64Url(bytes) {
     let binary = "";
     for (let i = 0; i < bytes.length; i += 0x8000) {
