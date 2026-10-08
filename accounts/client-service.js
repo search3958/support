@@ -1,4 +1,4 @@
-/* 0f8 Account Client Service v2
+/* 0F8 Account Client Service v2
  * Rename this file to client-service.js when deploying.
  */
 (() => {
@@ -30,7 +30,7 @@
   function getOrigin() {
     const origin = location.origin.toLowerCase();
     if (!/^https:\/\//.test(origin) && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-      throw new Error("0f8 requires an HTTPS origin.");
+      throw new Error("0F8 requires an HTTPS origin.");
     }
     return origin;
   }

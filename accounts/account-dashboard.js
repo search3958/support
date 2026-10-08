@@ -1,4 +1,6 @@
-/* Rename to account-dashboard.js when deploying. */
+import "@material/web/all.js";
+import {styles as typescaleStyles} from "@material/web/typography/md-typescale-styles.js";
+
 (() => {
   "use strict";
 
@@ -9,166 +11,1040 @@
   const LEGACY_SIGNATURE_COOKIE = "of8_access_signature";
   const DATA_KEY_STORAGE = "__of8_data_access_key_v2__";
   const MANAGEMENT_ORIGIN = "https://search3958.github.io";
+  const GREETING_UPDATE_INTERVAL_MS = 60 * 1000;
 
-  function log(event, details = {}) { console.log("[0f8-dashboard]", event, details); }
-  function errorLog(event, error, details = {}) { console.error("[0f8-dashboard]", event, error instanceof Error ? error.message : String(error), details); }
-  function required(id) { const element = document.getElementById(id); if (!element) { console.error(`[0f8-dashboard] Required element not found: #${id}`); throw new Error(`Required element not found: #${id}`); } return element; }
-  function cookie(name) { const prefix = `${encodeURIComponent(name)}=`; const item = document.cookie.split("; ").find((entry) => entry.trim().startsWith(prefix)); if (!item) return ""; try { return decodeURIComponent(item.trim().slice(prefix.length)); } catch (error) { errorLog("cookie_decode_failed", error, { name }); return ""; } }
-  function sessionCookie(name, legacyName) { const value = cookie(name); if (value) return value; const legacy = cookie(legacyName); if (legacy) log("legacy_cookie_detected", { name: legacyName }); return legacy; }
-  function setCookie(name, value) { document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=259200; Path=/; Secure; SameSite=Strict`; log("cookie_saved", { name }); }
-  function delCookie(name) { document.cookie = `${encodeURIComponent(name)}=; Max-Age=0; Path=/; Secure; SameSite=Strict`; log("cookie_deleted", { name }); }
-  function setStatus(id, message, kind = "") { const element = required(id); element.textContent = message; element.dataset.kind = kind; }
-  function base64Url(bytes) { let binary = ""; for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""); }
-  async function fileToBase64Url(file) { return base64Url(new Uint8Array(await file.arrayBuffer())); }
+  let currentAccount = null;
+  let greetingTimer = null;
+
+  function log(event, details = {}) {
+    console.log("[0f8-dashboard]", event, details);
+  }
+
+  function errorLog(event, error, details = {}) {
+    console.error(
+      "[0f8-dashboard]",
+      event,
+      error instanceof Error ? error.message : String(error),
+      details,
+    );
+  }
+
+  function required(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+      console.error(`[0f8-dashboard] Required element not found: #${id}`);
+      throw new Error(`Required element not found: #${id}`);
+    }
+    return element;
+  }
+
+  function cookie(name) {
+    const prefix = `${encodeURIComponent(name)}=`;
+    const item = document.cookie
+      .split("; ")
+      .find((entry) => entry.trim().startsWith(prefix));
+
+    if (!item) {
+      console.log("[0f8-dashboard] cookie_not_found", {name});
+      return "";
+    }
+
+    try {
+      return decodeURIComponent(item.trim().slice(prefix.length));
+    } catch (error) {
+      errorLog("cookie_decode_failed", error, {name});
+      return "";
+    }
+  }
+
+  function sessionCookie(name, legacyName) {
+    const value = cookie(name);
+    if (value) {
+      return value;
+    }
+
+    const legacy = cookie(legacyName);
+    if (legacy) {
+      log("legacy_cookie_detected", {name: legacyName});
+    }
+    return legacy;
+  }
+
+  function setCookie(name, value) {
+    document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; Max-Age=259200; Path=/; Secure; SameSite=Strict`;
+    log("cookie_saved", {name});
+  }
+
+  function delCookie(name) {
+    document.cookie = `${encodeURIComponent(name)}=; Max-Age=0; Path=/; Secure; SameSite=Strict`;
+    log("cookie_deleted", {name});
+  }
+
+  function setStatus(id, message, kind = "") {
+    const element = required(id);
+    element.textContent = message;
+    element.dataset.kind = kind;
+    log("status_updated", {id, kind, message});
+  }
+
+  function base64Url(bytes) {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(binary)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+  }
+
+  async function fileToBase64Url(file) {
+    if (!(file instanceof File)) {
+      throw new Error("アイコンファイルが正しく指定されていません。");
+    }
+    return base64Url(new Uint8Array(await file.arrayBuffer()));
+  }
+
   function imageDimensions(file) {
+    if (!(file instanceof File)) {
+      return Promise.reject(new Error("アイコンファイルが正しく指定されていません。"));
+    }
+
     return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file); const image = new Image();
-      image.onload = () => { URL.revokeObjectURL(url); resolve({ width: image.naturalWidth, height: image.naturalHeight }); };
-      image.onerror = () => { URL.revokeObjectURL(url); reject(new Error("アイコン画像を読み込めませんでした。")); };
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+
+      image.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve({width: image.naturalWidth, height: image.naturalHeight});
+        log("icon_dimensions_checked", {
+          name: file.name,
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        });
+      };
+
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("アイコン画像を読み込めませんでした。"));
+      };
+
       image.src = url;
     });
   }
-  function isManagementOrigin() { return location.origin.toLowerCase() === MANAGEMENT_ORIGIN; }
-  function clearSession() { delCookie(TOKEN_COOKIE); delCookie(SIGNATURE_COOKIE); delCookie(LEGACY_TOKEN_COOKIE); delCookie(LEGACY_SIGNATURE_COOKIE); localStorage.removeItem(DATA_KEY_STORAGE); log("session_cleared"); }
+
+  function isManagementOrigin() {
+    return location.origin.toLowerCase() === MANAGEMENT_ORIGIN;
+  }
+
+  function clearSession() {
+    delCookie(TOKEN_COOKIE);
+    delCookie(SIGNATURE_COOKIE);
+    delCookie(LEGACY_TOKEN_COOKIE);
+    delCookie(LEGACY_SIGNATURE_COOKIE);
+    localStorage.removeItem(DATA_KEY_STORAGE);
+    currentAccount = null;
+    log("session_cleared");
+  }
+
+  function getGreeting(date = new Date()) {
+    const hour = date.getHours();
+
+    if (hour >= 5 && hour < 11) {
+      return "おはようございます";
+    }
+    if (hour >= 11 && hour < 17) {
+      return "こんにちは";
+    }
+    if (hour >= 17 && hour < 22) {
+      return "こんばんは";
+    }
+    return "おやすみなさい";
+  }
+
+  function updateGreeting() {
+    const greeting = required("dashboard-greeting");
+    const nextGreeting = getGreeting();
+
+    if (greeting.textContent !== nextGreeting) {
+      greeting.textContent = nextGreeting;
+      log("greeting_updated", {greeting: nextGreeting});
+    }
+  }
+
+  function startGreetingClock() {
+    if (greetingTimer !== null) {
+      window.clearInterval(greetingTimer);
+    }
+    updateGreeting();
+    greetingTimer = window.setInterval(updateGreeting, GREETING_UPDATE_INTERVAL_MS);
+    log("greeting_clock_started", {intervalMs: GREETING_UPDATE_INTERVAL_MS});
+  }
 
   async function api(path, options = {}) {
-    const headers = new Headers({ Accept: "application/json", ...(options.headers || {}) });
-    const token = sessionCookie(TOKEN_COOKIE, LEGACY_TOKEN_COOKIE); const signature = sessionCookie(SIGNATURE_COOKIE, LEGACY_SIGNATURE_COOKIE);
-    if (token) headers.set("Authorization", `Bearer ${token}`);
-    if (signature) headers.set("X-OF8-Signature", signature);
-    if (options.body !== undefined) headers.set("Content-Type", "application/json");
+    if (typeof path !== "string" || !path.startsWith("/")) {
+      throw new Error("APIパスが不正です。");
+    }
+
+    const headers = new Headers({
+      Accept: "application/json",
+      ...(options.headers || {}),
+    });
+
+    const token = sessionCookie(TOKEN_COOKIE, LEGACY_TOKEN_COOKIE);
+    const signature = sessionCookie(SIGNATURE_COOKIE, LEGACY_SIGNATURE_COOKIE);
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    if (signature) {
+      headers.set("X-OF8-Signature", signature);
+    }
+    if (options.body !== undefined) {
+      headers.set("Content-Type", "application/json");
+    }
+
     if (options.dataAccess === true) {
       const accessKey = localStorage.getItem(DATA_KEY_STORAGE) || "";
-      if (!accessKey) throw new Error("データアクセスキーがありません。再ログインしてください。");
+      if (!accessKey) {
+        throw new Error("データアクセスキーがありません。再ログインしてください。");
+      }
       headers.set("X-OF8-Data-Access-Key", accessKey);
     }
-    const response = await fetch(`${API_BASE}${path}`, { method: options.method || "GET", headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), cache: "no-store", credentials: "omit" });
-    const data = await response.json().catch(() => null);
-    if (!response.ok || !data?.ok) throw new Error(data?.error?.message || `Request failed (${response.status}).`);
-    if (data.token && data.signature) { setCookie(TOKEN_COOKIE, data.token); setCookie(SIGNATURE_COOKIE, data.signature); log("token_rotated", { path }); }
+
+    log("api_request", {path, method: options.method || "GET"});
+
+    const response = await fetch(`${API_BASE}${path}`, {
+      method: options.method || "GET",
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      cache: "no-store",
+      credentials: "omit",
+    });
+
+    const data = await response.json().catch((error) => {
+      errorLog("api_json_parse_failed", error, {path, status: response.status});
+      return null;
+    });
+
+    if (!response.ok || !data?.ok) {
+      const message = data?.error?.message || `Request failed (${response.status}).`;
+      throw new Error(message);
+    }
+
+    if (data.token && data.signature) {
+      setCookie(TOKEN_COOKIE, data.token);
+      setCookie(SIGNATURE_COOKIE, data.signature);
+      log("token_rotated", {path});
+    }
+
+    log("api_success", {path, status: response.status});
     return data;
   }
 
-  function showDashboard(account) {
-    required("login-card").classList.add("account-hidden"); required("dashboard-card").classList.remove("account-hidden");
-    required("account-id").textContent = `ID: ${account.id}`; required("account-name").value = account.name;
-    const icon = required("account-icon");
-    if (account.icon && typeof account.icon === "string") { icon.src = `data:${account.iconMimeType || "image/png"};base64,${account.icon}`; icon.hidden = false; log("icon_loaded"); } else { icon.removeAttribute("src"); icon.hidden = true; log("icon_not_set"); }
-    const allowed = isManagementOrigin();
-    required("save-profile").disabled = !allowed; required("remove-icon").disabled = !allowed; required("account-icon-file").disabled = !allowed; required("account-name").disabled = !allowed;
-    setStatus("management-origin-status", allowed ? "プロフィール編集: search3958.github.io として許可" : "プロフィール・アイコン編集は search3958.github.io からのみ許可されます。", allowed ? "success" : "error");
+  function setDisabled(id, disabled) {
+    const element = required(id);
+    element.disabled = Boolean(disabled);
+    log("control_disabled_changed", {id, disabled: Boolean(disabled)});
   }
 
-  async function load() { const data = await api("/v1/account/info"); showDashboard(data.account); await loadUsage(); log("dashboard_loaded", { id: data.account.id }); }
+  function renderAccount(account) {
+    if (!account || typeof account !== "object" || typeof account.id !== "string") {
+      throw new Error("アカウント情報が不正です。");
+    }
+
+    currentAccount = account;
+
+    required("login-card").classList.add("account-hidden");
+    required("dashboard-card").classList.remove("account-hidden");
+    required("account-id").textContent = `@${account.id}`;
+    required("account-name-summary").textContent = account.name || "名前未設定";
+    required("dashboard-title").textContent = account.name || "アカウント";
+    required("account-name").value = account.name || "";
+
+    const fallback = required("account-avatar-fallback");
+    const fallbackText = [...(account.name || account.id || "0")][0] || "0";
+    fallback.textContent = fallbackText.toUpperCase();
+
+    const icon = required("account-icon");
+    if (account.icon && typeof account.icon === "string") {
+      icon.src = `data:${account.iconMimeType || "image/png"};base64,${account.icon}`;
+      icon.hidden = false;
+      fallback.hidden = true;
+      log("icon_loaded");
+    } else {
+      icon.removeAttribute("src");
+      icon.hidden = true;
+      fallback.hidden = false;
+      log("icon_not_set");
+    }
+
+    const allowed = isManagementOrigin();
+    setDisabled("open-name-dialog", !allowed);
+    setDisabled("select-icon-button", !allowed);
+    setDisabled("remove-icon", !allowed);
+    setDisabled("open-password-dialog", !allowed);
+    setDisabled("logout-all", !allowed);
+    setDisabled("delete-account", !allowed);
+
+    if (allowed) {
+      setStatus("management-origin-status", "プロフィール・パスワード・アカウント操作を管理できます。", "success");
+    } else {
+      setStatus("management-origin-status", "プロフィール・パスワード変更と一部の管理操作は search3958.github.io からのみ許可されます。", "error");
+    }
+
+    updateGreeting();
+    log("account_rendered", {id: account.id});
+  }
+
+  function resetLoginView(message = "") {
+    required("dashboard-card").classList.add("account-hidden");
+    required("login-card").classList.remove("account-hidden");
+    if (message) {
+      setStatus("dashboard-login-status", message, "success");
+    }
+    log("login_view_reset", {message});
+  }
+
+  function clearNameDialog() {
+    const field = required("account-name");
+    field.value = currentAccount?.name || "";
+    field.error = false;
+    field.errorText = "";
+    setStatus("name-dialog-status", "");
+  }
+
+  function clearPasswordDialog() {
+    required("current-password").value = "";
+    required("new-password").value = "";
+    required("current-password").type = "password";
+    required("new-password").type = "password";
+    required("toggle-current-password").selected = false;
+    required("toggle-new-password").selected = false;
+    setStatus("password-dialog-status", "");
+  }
+
+  async function openDialog(id) {
+    const dialog = required(id);
+    if (typeof dialog.show !== "function") {
+      console.error(`[0f8-dashboard] Dialog API unavailable: #${id}`);
+      throw new Error("ダイアログを開けませんでした。");
+    }
+    await dialog.show();
+    log("dialog_opened", {id});
+  }
+
+  async function closeDialog(id) {
+    const dialog = required(id);
+    if (!dialog.open) {
+      log("dialog_already_closed", {id});
+      return;
+    }
+    await dialog.close();
+    log("dialog_closed", {id});
+  }
+
+  async function openNameDialog() {
+    if (!isManagementOrigin()) {
+      console.error("[0f8-dashboard] Name change is unavailable outside management origin.");
+      return;
+    }
+    clearNameDialog();
+    await openDialog("name-dialog");
+    required("account-name").focus();
+  }
+
+  async function openPasswordDialog() {
+    if (!isManagementOrigin()) {
+      console.error("[0f8-dashboard] Password change is unavailable outside management origin.");
+      return;
+    }
+    clearPasswordDialog();
+    await openDialog("password-dialog");
+    required("current-password").focus();
+  }
+
+  function validateNameField() {
+    const field = required("account-name");
+    const value = String(field.value || "").trim();
+
+    if (!value) {
+      field.error = true;
+      field.errorText = "名前を入力してください。";
+      console.error("[0f8-dashboard] Name validation failed: empty");
+      return null;
+    }
+
+    if ([...value].length > 80) {
+      field.error = true;
+      field.errorText = "名前は80文字以内で入力してください。";
+      console.error("[0f8-dashboard] Name validation failed: too long");
+      return null;
+    }
+
+    field.error = false;
+    field.errorText = "";
+    return value;
+  }
+
+  async function saveName() {
+    if (!isManagementOrigin()) {
+      throw new Error("プロフィール編集は search3958.github.io からのみ許可されています。");
+    }
+
+    const name = validateNameField();
+    if (!name) {
+      throw new Error("入力内容を確認してください。");
+    }
+
+    const button = required("save-name");
+    button.disabled = true;
+    setStatus("name-dialog-status", "保存しています…");
+
+    try {
+      const data = await api("/v1/account/profile", {
+        method: "POST",
+        body: {name},
+      });
+
+      renderAccount(data.account);
+      setStatus("dashboard-status", "名前を保存しました。", "success");
+      await closeDialog("name-dialog");
+      log("name_changed", {id: data.account.id});
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function saveIcon() {
+    if (!isManagementOrigin()) {
+      throw new Error("プロフィール・アイコン編集は search3958.github.io からのみ許可されています。");
+    }
+
+    const input = required("account-icon-file");
+    const file = input.files?.[0];
+    if (!file) {
+      throw new Error("アイコン画像を選択してください。");
+    }
+
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) {
+      throw new Error("PNG、JPEG、WebP、GIFの画像を選択してください。");
+    }
+    if (file.size > 13 * 1024) {
+      throw new Error("アイコンは13KB以内にしてください。");
+    }
+
+    const dimensions = await imageDimensions(file);
+    if (dimensions.width !== 64 || dimensions.height !== 64) {
+      throw new Error("アイコンは64x64pxにしてください。");
+    }
+
+    const body = {
+      iconBase64Url: await fileToBase64Url(file),
+      iconMimeType: file.type,
+    };
+
+    const button = required("select-icon-button");
+    button.disabled = true;
+
+    try {
+      const data = await api("/v1/account/profile", {
+        method: "POST",
+        body,
+      });
+
+      input.value = "";
+      required("icon-file-name").textContent = "64×64px / 13KB以内";
+      renderAccount(data.account);
+      setStatus("dashboard-status", "アイコンを保存しました。", "success");
+      log("icon_changed", {id: data.account.id});
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function removeIcon() {
+    if (!isManagementOrigin()) {
+      throw new Error("プロフィール・アイコン編集は search3958.github.io からのみ許可されています。");
+    }
+
+    const button = required("remove-icon");
+    button.disabled = true;
+
+    try {
+      const data = await api("/v1/account/profile", {
+        method: "POST",
+        body: {removeIcon: true},
+      });
+
+      renderAccount(data.account);
+      required("icon-file-name").textContent = "64×64px / 13KB以内";
+      setStatus("dashboard-status", "アイコンを削除しました。", "success");
+      log("icon_removed", {id: data.account.id});
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function getTextFieldValue(id) {
+    const field = required(id);
+    return String(field.value || "");
+  }
+
+  function validatePasswordFields() {
+    const currentPassword = getTextFieldValue("current-password");
+    const newPassword = getTextFieldValue("new-password");
+
+    if ([currentPassword, newPassword].some((value) => [...value].length < 8)) {
+      console.error("[0f8-dashboard] Password validation failed: minimum length");
+      setStatus("password-dialog-status", "パスワードは8文字以上で入力してください。", "error");
+      return null;
+    }
+
+    if ([currentPassword, newPassword].some((value) => [...value].length > 128)) {
+      console.error("[0f8-dashboard] Password validation failed: maximum length");
+      setStatus("password-dialog-status", "パスワードは128文字以内で入力してください。", "error");
+      return null;
+    }
+
+    if (currentPassword === newPassword) {
+      console.error("[0f8-dashboard] Password validation failed: unchanged");
+      setStatus("password-dialog-status", "新しいパスワードは現在のパスワードと異なるものにしてください。", "error");
+      return null;
+    }
+
+    return {currentPassword, newPassword};
+  }
+
+  async function changePassword() {
+    if (!isManagementOrigin()) {
+      throw new Error("パスワード変更は search3958.github.io からのみ許可されています。");
+    }
+
+    const passwords = validatePasswordFields();
+    if (!passwords) {
+      throw new Error("入力内容を確認してください。");
+    }
+
+    const button = required("save-password");
+    button.disabled = true;
+    setStatus("password-dialog-status", "パスワードを変更しています…");
+
+    try {
+      await api("/v1/account/password", {
+        method: "POST",
+        body: passwords,
+      });
+
+      clearPasswordDialog();
+      await closeDialog("password-dialog");
+      clearSession();
+      resetLoginView("パスワードを変更しました。全保存データも新しい鍵で再暗号化されています。");
+      log("password_changed");
+    } finally {
+      button.disabled = false;
+    }
+  }
 
   async function loadUsage() {
     setStatus("usage-status", "容量を取得しています…");
+
     const data = await api("/v1/account/usage");
     const usage = data.usage;
-    required("usage-total").textContent = `${usage.dataChars.toLocaleString()}文字 / ${formatBytes(usage.dataBytes)}`;
+
+    if (!usage || !Array.isArray(usage.domains)) {
+      throw new Error("容量情報の形式が不正です。");
+    }
+
+    required("usage-total").textContent = `${Number(usage.dataChars || 0).toLocaleString()}文字 / ${formatBytes(usage.dataBytes)}`;
     required("usage-icon").textContent = formatBytes(usage.iconBytes);
     required("usage-account-total").textContent = formatBytes(usage.accountStorageBytes);
-    const tbody = required("usage-domains"); tbody.textContent = "";
+
+    const maxDataChars = Number(usage.maxDataChars);
+    const dataChars = Number(usage.dataChars);
+    const ratio = Number.isFinite(maxDataChars) && maxDataChars > 0
+      ? Math.min(1, Math.max(0, dataChars / maxDataChars))
+      : 0;
+
+    const progress = required("usage-progress");
+    progress.value = ratio;
+    required("usage-percent").textContent = `${Math.round(ratio * 100)}%`;
+
+    const list = required("usage-domains");
+    list.textContent = "";
+
+    if (!usage.domains.length) {
+      const emptyItem = document.createElement("md-list-item");
+      emptyItem.textContent = "保存データはありません。";
+      list.appendChild(emptyItem);
+      log("usage_domains_empty");
+    }
+
     for (const row of usage.domains) {
-      const tr = document.createElement("tr");
-      const domain = document.createElement("td"); domain.textContent = row.domain;
-      const chars = document.createElement("td"); chars.textContent = `${row.encryptedChars.toLocaleString()}文字`;
-      const bytes = document.createElement("td"); bytes.textContent = formatBytes(row.encryptedBytes);
-      const action = document.createElement("td");
-      const button = document.createElement("button");
-      button.className = "account-button secondary domain-delete-button";
-      button.type = "button";
-      button.textContent = "削除";
-      button.disabled = !isManagementOrigin();
-      button.title = isManagementOrigin() ? "このドメインの保存データをすべて削除" : "管理画面からのみ削除できます";
-      button.addEventListener("click", async () => {
-        if (!isManagementOrigin()) { console.error("[0f8-dashboard] Domain delete is unavailable outside management origin."); return; }
-        if (!window.confirm(`${row.domain} の保存データをすべて削除します。続行しますか？`)) return;
-        button.disabled = true;
+      const item = document.createElement("md-list-item");
+      const domain = document.createElement("div");
+      const supporting = document.createElement("div");
+      const deleteButton = document.createElement("md-outlined-button");
+
+      if (!row || typeof row.domain !== "string") {
+        console.error("[0f8-dashboard] Invalid domain usage row detected.");
+        continue;
+      }
+
+      domain.slot = "headline";
+      domain.textContent = row.domain;
+
+      supporting.slot = "supporting-text";
+      supporting.textContent = `${Number(row.encryptedChars || 0).toLocaleString()}文字 / ${formatBytes(row.encryptedBytes)}`;
+
+      deleteButton.type = "button";
+      deleteButton.textContent = "削除";
+      deleteButton.slot = "end";
+      deleteButton.disabled = !isManagementOrigin();
+      deleteButton.title = isManagementOrigin()
+        ? "このドメインの保存データをすべて削除"
+        : "管理画面からのみ削除できます";
+
+      deleteButton.addEventListener("click", async () => {
+        if (!isManagementOrigin()) {
+          console.error("[0f8-dashboard] Domain delete is unavailable outside management origin.");
+          return;
+        }
+
+        if (!window.confirm(`${row.domain} の保存データをすべて削除します。続行しますか？`)) {
+          log("domain_delete_cancelled", {domain: row.domain});
+          return;
+        }
+
+        deleteButton.disabled = true;
         try {
-          await api("/v1/account/domain", { method: "DELETE", body: { domain: row.domain } });
-          log("domain_deleted", { domain: row.domain });
+          await api("/v1/account/domain", {
+            method: "DELETE",
+            body: {domain: row.domain},
+          });
+          log("domain_deleted", {domain: row.domain});
           await loadUsage();
           setStatus("usage-status", `${row.domain} の保存データを削除しました。`, "success");
         } catch (error) {
-          errorLog("domain_delete_failed", error, { domain: row.domain });
+          errorLog("domain_delete_failed", error, {domain: row.domain});
           setStatus("usage-status", error.message, "error");
-          button.disabled = false;
+          deleteButton.disabled = false;
         }
       });
-      action.appendChild(button);
-      tr.append(domain, chars, bytes, action); tbody.appendChild(tr);
+
+      item.append(domain, supporting, deleteButton);
+      list.appendChild(item);
     }
-    if (!usage.domains.length) { const tr = document.createElement("tr"); const td = document.createElement("td"); td.colSpan = 4; td.textContent = "保存データはありません。"; tr.appendChild(td); tbody.appendChild(tr); }
-    setStatus("usage-status", `データ上限: ${usage.maxDataChars.toLocaleString()}文字`);
-    log("usage_loaded", { domains: usage.domains.length, dataBytes: usage.dataBytes });
+
+    setStatus(
+      "usage-status",
+      Number.isFinite(maxDataChars)
+        ? `データ上限: ${maxDataChars.toLocaleString()}文字`
+        : "容量を取得しました。",
+    );
+    log("usage_loaded", {
+      domains: usage.domains.length,
+      dataBytes: Number(usage.dataBytes || 0),
+      dataChars,
+    });
   }
 
   function formatBytes(bytes) {
-    if (!Number.isFinite(bytes) || bytes < 0) return "-";
-    if (bytes < 1024) return `${bytes} B`; const units = ["KB", "MB", "GB"]; let value = bytes / 1024;
-    for (const unit of units) { if (value < 1024 || unit === units.at(-1)) return `${value.toFixed(value >= 10 ? 1 : 2)} ${unit}`; value /= 1024; }
+    if (!Number.isFinite(bytes) || bytes < 0) {
+      return "-";
+    }
+
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    const units = ["KB", "MB", "GB"];
+    let value = bytes / 1024;
+
+    for (const unit of units) {
+      if (value < 1024 || unit === units.at(-1)) {
+        return `${value.toFixed(value >= 10 ? 1 : 2)} ${unit}`;
+      }
+      value /= 1024;
+    }
+
     return `${bytes} B`;
   }
 
-  async function login() {
-    const popupUrl = new URL("account-login.html", location.href); popupUrl.searchParams.set("origin", location.origin); popupUrl.searchParams.set("state", base64Url(crypto.getRandomValues(new Uint8Array(24))));
-    const popup = window.open(popupUrl.toString(), "of8-dashboard-login", "popup=yes,width=460,height=720");
-    if (!popup) throw new Error("ログインポップアップがブロックされました。");
-    const result = await new Promise((resolve, reject) => {
-      const expectedOrigin = location.origin; const state = popupUrl.searchParams.get("state"); const timeout = setTimeout(() => { window.removeEventListener("message", handler); reject(new Error("ログインがタイムアウトしました。")); }, 5 * 60 * 1000);
-      function handler(event) {
-        if (event.origin !== expectedOrigin || event.source !== popup) return; const message = event.data;
-        if (!message || message.type !== "OF8_AUTH_RESULT" || message.version !== 2 || message.state !== state) return;
-        if (typeof message.accessToken !== "string" || typeof message.signature !== "string" || typeof message.dataAccessKey !== "string") { clearTimeout(timeout); window.removeEventListener("message", handler); reject(new Error("認証結果が不正です。")); return; }
-        clearTimeout(timeout); window.removeEventListener("message", handler); resolve(message);
-      }
-      window.addEventListener("message", handler);
-    });
-    setCookie(TOKEN_COOKIE, result.accessToken); setCookie(SIGNATURE_COOKIE, result.signature); localStorage.setItem(DATA_KEY_STORAGE, result.dataAccessKey); log("login_completed"); await load();
+  async function load() {
+    const data = await api("/v1/account/info");
+    renderAccount(data.account);
+    await loadUsage();
+    log("dashboard_loaded", {id: data.account.id});
   }
 
-  async function saveProfile() {
-    if (!isManagementOrigin()) throw new Error("プロフィール・アイコン編集は search3958.github.io からのみ許可されます。");
-    const name = required("account-name").value.trim(); if (!name) throw new Error("名前を入力してください。");
-    const body = { name }; const file = required("account-icon-file").files?.[0];
-    if (file) { if (file.size > 13 * 1024) throw new Error("アイコンは13KB以内にしてください。"); const dimensions = await imageDimensions(file); if (dimensions.width !== 64 || dimensions.height !== 64) throw new Error("アイコンは64x64pxにしてください。"); body.iconBase64Url = await fileToBase64Url(file); body.iconMimeType = file.type; }
-    const data = await api("/v1/account/profile", { method: "POST", body }); showDashboard(data.account); setStatus("profile-status", "保存しました。", "success");
+  async function login() {
+    const popupUrl = new URL("account-login.html", location.href);
+    popupUrl.searchParams.set("origin", location.origin);
+    popupUrl.searchParams.set(
+      "state",
+      base64Url(crypto.getRandomValues(new Uint8Array(24))),
+    );
+
+    log("login_popup_opening", {origin: location.origin});
+
+    const popup = window.open(
+      popupUrl.toString(),
+      "of8-dashboard-login",
+      "popup=yes,width=460,height=720",
+    );
+
+    if (!popup) {
+      throw new Error("ログインポップアップがブロックされました。");
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      const expectedOrigin = location.origin;
+      const state = popupUrl.searchParams.get("state");
+      const timeout = setTimeout(() => {
+        window.removeEventListener("message", handler);
+        reject(new Error("ログインがタイムアウトしました。"));
+      }, 5 * 60 * 1000);
+
+      function finishError(message) {
+        clearTimeout(timeout);
+        window.removeEventListener("message", handler);
+        reject(new Error(message));
+      }
+
+      function handler(event) {
+        if (event.origin !== expectedOrigin || event.source !== popup) {
+          return;
+        }
+
+        const message = event.data;
+        if (!message || message.type !== "OF8_AUTH_RESULT" || message.version !== 2 || message.state !== state) {
+          return;
+        }
+
+        if (
+          typeof message.accessToken !== "string" ||
+          typeof message.signature !== "string" ||
+          typeof message.dataAccessKey !== "string"
+        ) {
+          finishError("認証結果が不正です。");
+          return;
+        }
+
+        clearTimeout(timeout);
+        window.removeEventListener("message", handler);
+        resolve(message);
+      }
+
+      window.addEventListener("message", handler);
+    });
+
+    setCookie(TOKEN_COOKIE, result.accessToken);
+    setCookie(SIGNATURE_COOKIE, result.signature);
+    localStorage.setItem(DATA_KEY_STORAGE, result.dataAccessKey);
+    log("login_completed");
+    await load();
   }
-  async function removeIcon() {
-    if (!isManagementOrigin()) throw new Error("プロフィール・アイコン編集は search3958.github.io からのみ許可されます。");
-    const data = await api("/v1/account/profile", { method: "POST", body: { removeIcon: true } }); showDashboard(data.account); setStatus("profile-status", "アイコンを削除しました。", "success");
-  }
-  async function changePassword() {
-    if (!isManagementOrigin()) throw new Error("パスワード変更は search3958.github.io からのみ許可されています。");
-    const currentPassword = required("current-password").value; const newPassword = required("new-password").value;
-    if ([currentPassword, newPassword].some((value) => [...value].length < 8)) throw new Error("パスワードは8文字以上で入力してください。");
-    await api("/v1/account/password", { method: "POST", body: { currentPassword, newPassword } });
-    clearSession(); required("dashboard-card").classList.add("account-hidden"); required("login-card").classList.remove("account-hidden"); required("current-password").value = ""; required("new-password").value = "";
-    setStatus("password-status", "パスワードを変更しました。全保存データも新しい鍵で再暗号化されています。", "success");
-  }
+
   async function logoutAll() {
-    if (!isManagementOrigin()) throw new Error("全端末からのログアウトは search3958.github.io からのみ許可されています。");
-    await api("/v1/auth/logout-all", { method: "POST", body: {} }); clearSession(); required("dashboard-card").classList.add("account-hidden"); required("login-card").classList.remove("account-hidden"); setStatus("dashboard-status", "すべての端末からログアウトしました。", "success"); }
-  async function logout() { try { await api("/v1/auth/logout", { method: "POST", body: {} }); } finally { clearSession(); required("dashboard-card").classList.add("account-hidden"); required("login-card").classList.remove("account-hidden"); setStatus("dashboard-status", "ログアウトしました。", "success"); } }
+    if (!isManagementOrigin()) {
+      throw new Error("全端末からのログアウトは search3958.github.io からのみ許可されています。");
+    }
+
+    await api("/v1/auth/logout-all", {
+      method: "POST",
+      body: {},
+    });
+
+    clearSession();
+    resetLoginView("すべての端末からログアウトしました。");
+    log("logout_all_completed");
+  }
+
+  async function logout() {
+    try {
+      await api("/v1/auth/logout", {
+        method: "POST",
+        body: {},
+      });
+    } finally {
+      clearSession();
+      resetLoginView("ログアウトしました。");
+      log("logout_completed");
+    }
+  }
+
   async function deleteAccount() {
-    if (!isManagementOrigin()) throw new Error("アカウント削除は search3958.github.io からのみ許可されています。");
-    const password = window.prompt("アカウントを完全に削除します。現在のパスワードを入力してください。"); if (password === null) return; if (!window.confirm("アカウントと保存データを完全に削除します。続行しますか？")) return;
-    await api("/v1/account", { method: "DELETE", body: { password } }); clearSession(); required("dashboard-card").classList.add("account-hidden"); required("login-card").classList.remove("account-hidden"); setStatus("dashboard-status", "アカウントを削除しました。", "success"); log("account_deleted");
+    if (!isManagementOrigin()) {
+      throw new Error("アカウント削除は search3958.github.io からのみ許可されています。");
+    }
+
+    const password = window.prompt("アカウントを完全に削除します。現在のパスワードを入力してください。");
+    if (password === null) {
+      log("account_delete_cancelled_at_password_prompt");
+      return;
+    }
+
+    if (!password) {
+      throw new Error("現在のパスワードを入力してください。");
+    }
+
+    if (!window.confirm("アカウントと保存データを完全に削除します。続行しますか？")) {
+      log("account_delete_cancelled_at_confirm");
+      return;
+    }
+
+    await api("/v1/account", {
+      method: "DELETE",
+      body: {password},
+    });
+
+    clearSession();
+    resetLoginView("アカウントを削除しました。");
+    log("account_deleted");
+  }
+
+  function bindPasswordToggle(buttonId, fieldId) {
+    const button = required(buttonId);
+    const field = required(fieldId);
+
+    button.addEventListener("click", () => {
+      field.type = button.selected ? "text" : "password";
+      button.setAttribute(
+        "aria-label",
+        button.selected ? "パスワードを非表示" : "パスワードを表示",
+      );
+      log("password_visibility_changed", {fieldId, visible: button.selected});
+    });
+  }
+
+  function bindEvents() {
+    required("open-name-dialog").addEventListener("click", async () => {
+      try {
+        await openNameDialog();
+      } catch (error) {
+        errorLog("name_dialog_open_failed", error);
+      }
+    });
+
+    required("close-name-dialog").addEventListener("click", async () => {
+      try {
+        await closeDialog("name-dialog");
+      } catch (error) {
+        errorLog("name_dialog_close_failed", error);
+      }
+    });
+
+    required("cancel-name-dialog").addEventListener("click", async () => {
+      try {
+        await closeDialog("name-dialog");
+      } catch (error) {
+        errorLog("name_dialog_cancel_failed", error);
+      }
+    });
+
+    required("save-name").addEventListener("click", async () => {
+      try {
+        await saveName();
+      } catch (error) {
+        errorLog("name_change_failed", error);
+        setStatus("name-dialog-status", error.message, "error");
+      }
+    });
+
+    required("name-dialog-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      required("save-name").click();
+    });
+
+    required("select-icon-button").addEventListener("click", () => {
+      const input = required("account-icon-file");
+      input.click();
+      log("icon_file_picker_opened");
+    });
+
+    required("account-icon-file").addEventListener("change", async () => {
+      const input = required("account-icon-file");
+      const file = input.files?.[0];
+      if (!file) {
+        log("icon_file_selection_cleared");
+        return;
+      }
+
+      required("icon-file-name").textContent = file.name;
+      log("icon_file_selected", {name: file.name, size: file.size, type: file.type});
+
+      try {
+        await saveIcon();
+      } catch (error) {
+        errorLog("icon_change_failed", error);
+        input.value = "";
+        required("icon-file-name").textContent = "64×64px / 13KB以内";
+        setStatus("dashboard-status", error.message, "error");
+      }
+    });
+
+    required("remove-icon").addEventListener("click", async () => {
+      try {
+        await removeIcon();
+      } catch (error) {
+        errorLog("icon_remove_failed", error);
+        setStatus("dashboard-status", error.message, "error");
+      }
+    });
+
+    required("open-password-dialog").addEventListener("click", async () => {
+      try {
+        await openPasswordDialog();
+      } catch (error) {
+        errorLog("password_dialog_open_failed", error);
+      }
+    });
+
+    required("close-password-dialog").addEventListener("click", async () => {
+      try {
+        await closeDialog("password-dialog");
+      } catch (error) {
+        errorLog("password_dialog_close_failed", error);
+      }
+    });
+
+    required("cancel-password-dialog").addEventListener("click", async () => {
+      try {
+        await closeDialog("password-dialog");
+      } catch (error) {
+        errorLog("password_dialog_cancel_failed", error);
+      }
+    });
+
+    required("save-password").addEventListener("click", async () => {
+      try {
+        await changePassword();
+      } catch (error) {
+        errorLog("password_change_failed", error);
+        setStatus("password-dialog-status", error.message, "error");
+      }
+    });
+
+    required("password-dialog-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      required("save-password").click();
+    });
+
+    required("logout-all").addEventListener("click", async () => {
+      try {
+        await logoutAll();
+      } catch (error) {
+        errorLog("logout_all_failed", error);
+        setStatus("dashboard-status", error.message, "error");
+      }
+    });
+
+    required("logout").addEventListener("click", async () => {
+      try {
+        await logout();
+      } catch (error) {
+        errorLog("logout_failed", error);
+      }
+    });
+
+    required("delete-account").addEventListener("click", async () => {
+      try {
+        await deleteAccount();
+      } catch (error) {
+        errorLog("delete_account_failed", error);
+        setStatus("dashboard-status", error.message, "error");
+      }
+    });
+
+    required("refresh-usage").addEventListener("click", async () => {
+      const button = required("refresh-usage");
+      button.disabled = true;
+      try {
+        await loadUsage();
+      } catch (error) {
+        errorLog("usage_refresh_failed", error);
+        setStatus("usage-status", error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    required("refresh-dashboard").addEventListener("click", async () => {
+      const button = required("refresh-dashboard");
+      button.disabled = true;
+      try {
+        await load();
+        setStatus("dashboard-status", "アカウント情報を更新しました。", "success");
+      } catch (error) {
+        errorLog("dashboard_refresh_failed", error);
+        setStatus("dashboard-status", error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    const loginButton = required("dashboard-login");
+    loginButton.addEventListener("click", async () => {
+      loginButton.disabled = true;
+      setStatus("dashboard-login-status", "処理中…");
+      try {
+        await login();
+      } catch (error) {
+        errorLog("login_failed", error);
+        setStatus("dashboard-login-status", error.message, "error");
+      } finally {
+        loginButton.disabled = false;
+      }
+    });
+
+    bindPasswordToggle("toggle-current-password", "current-password");
+    bindPasswordToggle("toggle-new-password", "new-password");
+
+    log("events_bound");
   }
 
   async function init() {
-    required("profile-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await saveProfile(); } catch (error) { errorLog("profile_update_failed", error); setStatus("profile-status", error.message, "error"); } });
-    required("remove-icon").addEventListener("click", async () => { try { await removeIcon(); } catch (error) { errorLog("icon_remove_failed", error); setStatus("profile-status", error.message, "error"); } });
-    required("password-form").addEventListener("submit", async (event) => { event.preventDefault(); try { await changePassword(); } catch (error) { errorLog("password_change_failed", error); setStatus("password-status", error.message, "error"); } });
-    required("logout-all").addEventListener("click", async () => { try { await logoutAll(); } catch (error) { errorLog("logout_all_failed", error); setStatus("dashboard-status", error.message, "error"); } });
-    required("logout").addEventListener("click", async () => { try { await logout(); } catch (error) { errorLog("logout_failed", error); } });
-    required("delete-account").addEventListener("click", async () => { try { await deleteAccount(); } catch (error) { errorLog("delete_account_failed", error); setStatus("dashboard-status", error.message, "error"); } });
-    required("refresh-usage").addEventListener("click", async () => { try { await loadUsage(); } catch (error) { errorLog("usage_refresh_failed", error); setStatus("usage-status", error.message, "error"); } });
-    const loginButton = required("dashboard-login");
-    loginButton.addEventListener("click", async () => { loginButton.disabled = true; setStatus("dashboard-login-status", "処理中…"); try { await login(); } catch (error) { errorLog("login_failed", error); setStatus("dashboard-login-status", error.message, "error"); } finally { loginButton.disabled = false; } });
-    if (sessionCookie(TOKEN_COOKIE, LEGACY_TOKEN_COOKIE) && sessionCookie(SIGNATURE_COOKIE, LEGACY_SIGNATURE_COOKIE) && localStorage.getItem(DATA_KEY_STORAGE)) { try { await load(); log("existing_session_loaded"); } catch (error) { errorLog("session_load_failed", error); clearSession(); } }
-    log("ready", { managementOriginAllowed: isManagementOrigin() });
+    try {
+      if (Array.isArray(document.adoptedStyleSheets) && typescaleStyles?.styleSheet) {
+        document.adoptedStyleSheets = [...document.adoptedStyleSheets, typescaleStyles.styleSheet];
+        log("typescale_styles_applied");
+      } else {
+        console.error("[0f8-dashboard] adoptedStyleSheets is unavailable; using component defaults.");
+      }
+    } catch (error) {
+      errorLog("typescale_styles_apply_failed", error);
+    }
+
+    bindEvents();
+    startGreetingClock();
+
+    const hasSession = Boolean(
+      sessionCookie(TOKEN_COOKIE, LEGACY_TOKEN_COOKIE) &&
+      sessionCookie(SIGNATURE_COOKIE, LEGACY_SIGNATURE_COOKIE) &&
+      localStorage.getItem(DATA_KEY_STORAGE),
+    );
+
+    if (hasSession) {
+      try {
+        await load();
+        log("existing_session_loaded");
+      } catch (error) {
+        errorLog("session_load_failed", error);
+        clearSession();
+        resetLoginView("セッションを確認できませんでした。再度ログインしてください。");
+      }
+    } else {
+      log("no_existing_session");
+    }
+
+    log("ready", {
+      managementOriginAllowed: isManagementOrigin(),
+      materialWeb: true,
+    });
   }
-  try { init(); } catch (error) { errorLog("init_failed", error); }
+
+  init().catch((error) => {
+    errorLog("init_failed", error);
+  });
 })();

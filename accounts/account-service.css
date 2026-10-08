@@ -1,233 +1,281 @@
 :root {
-  color-scheme: light dark;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: Canvas;
-  color: CanvasText;
-  font-synthesis: none;
+  color-scheme: light dark;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+}
+a{ color:#000;text-decoration: none;
+}
 body {
-  margin: 0;
+  min-width: 320px;
   min-height: 100vh;
-  background: Canvas;
+  margin: 0;
+  padding-top:64px;
+}
+footer {
+    padding: 48px 0px;
+    padding-top: 15px;
+    text-align: center;
+    font-size: 20px;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 .account-page {
-  width: min(100% - 32px, 520px);
+  width: min(100%, 1120px);
   margin: 0 auto;
-  padding: 28px 0;
-}
-
-.account-header {
-  margin-bottom: 20px;
-}
-
-.account-title {
-  margin: 0 0 6px;
-  font-size: 1.55rem;
-  line-height: 1.25;
-}
-
-.account-subtitle {
-  margin: 0;
-  opacity: 0.72;
-  line-height: 1.55;
-}
-
-.account-card {
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  border-radius: 20px;
-  padding: 22px;
-  background: color-mix(in srgb, Canvas 94%, CanvasText 6%);
-}
-
-.account-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.account-tab {
-  min-height: 42px;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  border-radius: 12px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.account-tab[aria-selected="true"] {
-  background: color-mix(in srgb, Highlight 18%, Canvas);
-  border-color: Highlight;
-}
-
-.account-form {
-  display: grid;
-  gap: 14px;
-}
-
-.account-field {
-  display: grid;
-  gap: 7px;
-}
-
-.account-field label {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.account-field input {
-  width: 100%;
-  min-height: 46px;
-  padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
-  border-radius: 12px;
-  background: Canvas;
-  color: CanvasText;
-  font: inherit;
-}
-
-.account-field input:focus {
-  outline: 2px solid Highlight;
-  outline-offset: 1px;
-}
-
-.account-button {
-  min-height: 44px;
-  border: 0;
-  border-radius: 12px;
-  padding: 10px 16px;
-  background: Highlight;
-  color: HighlightText;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.account-button.secondary {
-  background: transparent;
-  color: inherit;
-  border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
-}
-
-.account-button:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.account-status {
-  min-height: 20px;
-  margin: 4px 0 0;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.account-status[data-kind="error"] {
-  color: #b3261e;
-}
-
-.account-status[data-kind="success"] {
-  color: #26734d;
-}
-
-.account-note {
-  margin-top: 18px;
-  font-size: 0.8rem;
-  opacity: 0.67;
-  line-height: 1.5;
+  padding: 20px 24px 56px;
 }
 
 .account-hidden {
   display: none !important;
 }
 
-.dashboard-grid {
-  display: grid;
-  gap: 18px;
+.account-header {
+  padding: 4px 0 24px;
 }
 
-.dashboard-row {
-  display: grid;
-  gap: 10px;
+.account-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  gap: 16px;
 }
 
-.dashboard-row.two {
-  grid-template-columns: 1fr auto;
-  align-items: end;
+.account-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.account-page-heading {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.account-page-heading h1,
+.account-page-heading p,
+.dashboard-group-heading h2,
+.dashboard-group-heading p,
+.usage-domain-heading h3,
+.dialog-content p {
+  margin: 0;
+}
+
+.account-login-section {
+  max-width: 760px;
+  margin: 12vh auto 0;
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+}
+
+.account-status {
+  min-height: 1.5em;
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+}
+
+.dashboard-section {
+  display: grid;
+  gap: 28px;
+}
+
+.dashboard-hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0 4px;
+}
+
+.dashboard-avatar-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+}
+p {
+    margin: 0px;
+}
+.dashboard-avatar,
+.dashboard-avatar-fallback {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
 }
 
 .dashboard-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  object-fit: cover;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  background: color-mix(in srgb, CanvasText 7%, Canvas);
+  display: block;
+  object-fit: cover;    position: absolute;
+    top: 0;
 }
 
-.dashboard-actions {
+.dashboard-avatar-fallback {
   display: grid;
-  gap: 10px;
+  place-items: center;
 }
 
-@media (max-width: 520px) {
-  .account-page {
-    width: min(100% - 20px, 520px);
-    padding-top: 14px;
-  }
-
-  .account-card {
-    padding: 18px;
-    border-radius: 16px;
-  }
-}
-
-.usage-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.usage-summary > div {
+.dashboard-hero-copy {
+  min-width: 0;
   display: grid;
   gap: 4px;
-  padding: 12px;
-  border: 1px solid color-mix(in srgb, CanvasText 16%, transparent);
-  border-radius: 12px;
 }
 
-.usage-summary span {
-  font-size: 0.82rem;
-  opacity: 0.72;
+.dashboard-greeting,
+.dashboard-name,
+.account-note {
+  margin: 0;
 }
 
-.usage-table-wrap {
-  overflow-x: auto;
-  margin: 12px 0;
-}
-
-.usage-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 460px;
-}
-
-.usage-table th,
-.usage-table td {
-  padding: 9px 8px;
-  border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
-  text-align: left;
-  vertical-align: top;
+.account-note {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 640px) {
-  .usage-summary {
+.dashboard-group {
+  display: grid;
+  gap: 14px;
+}
+
+.dashboard-group-heading {
+  display: grid;
+  gap: 4px;
+  padding-inline: 4px;
+}
+
+.dashboard-list {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 24px;
+  padding:0px;
+}
+
+.dashboard-list md-list-item {
+  min-height: 72px;
+}
+
+.dashboard-list md-list-item [slot="supporting-text"] {
+  overflow-wrap: anywhere;
+}
+
+.dashboard-item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.usage-progress-area {
+  display: grid;
+  gap: 10px;
+  padding: 4px;
+}
+
+.usage-progress-heading,
+.usage-domain-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.usage-domain-area {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.dashboard-domain-list md-list-item {
+  min-height: 76px;
+}
+
+.dashboard-domain-list md-list-item [slot="end"] {
+  margin-inline-start: 12px;
+}
+
+.dialog-headline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dialog-content {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  display: grid;
+  align-content: start;
+  gap: 22px;
+}
+
+.dialog-content md-outlined-text-field {
+  width: 100%;
+}
+
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.fullscreen-dialog {
+  width: 100vw;
+  height: 100dvh;
+  max-width: 100vw;
+  max-height: 100dvh;
+  margin: 0;
+  --md-dialog-container-shape: 0px;
+}
+
+@media (max-width: 720px) {
+  .account-page {
+    padding: 12px 16px 40px;
+  }
+
+  .dashboard-hero {
     grid-template-columns: 1fr;
+    justify-items: start;
+    gap: 16px;
+  }
+
+  .dashboard-avatar-wrap,
+  .dashboard-avatar,
+  .dashboard-avatar-fallback {
+    width: 80px;
+    height: 80px;
+  }
+
+  .dashboard-item-actions {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 4px 0 8px;
+  }
+
+  .dashboard-list md-list-item {
+    min-height: auto;
+    padding-block: 12px;
+  }
+
+  .usage-domain-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dialog-actions {
+    width: 100%;
   }
 }
