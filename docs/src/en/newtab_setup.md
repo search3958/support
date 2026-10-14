@@ -1,6 +1,6 @@
-# How to Set Up Newtab
+# How to Set Up Saetab
 
-This page provides instructions on how to set Newtab ([https://search3958.github.io/i/newtab/](https://search3958.github.io/i/newtab/?utm_source=gemini)) as the page that appears when you open a new tab in your browser.
+This page provides instructions on how to set Saetab ([https://search3958.github.io/i/saetab/](https://search3958.github.io/i/saetab/?utm_source=gemini)) as the page that appears when you open a new tab in your browser.
 
 Setup is completed in 3 steps
 
@@ -10,7 +10,7 @@ Setup is completed in 3 steps
 
 ### **Step 1: Install the Extension**
 
-To load Newtab as a new tab, install a dedicated extension.
+To load Saetab as a new tab, install a dedicated extension.
 
 Install the **"New Tab Redirect"** extension from the Chrome Web Store.
 
@@ -32,4 +32,4 @@ https://search3958.github.io/newtab/
 
 ---
 
-Now, every time you open a new tab, Newtab will be displayed.
+Now, every time you open a new tab, Saetab will be displayed.

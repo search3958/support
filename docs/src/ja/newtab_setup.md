@@ -1,6 +1,6 @@
-# Newtab の設定方法
+# Saetab の設定方法
 
-Newtab（[https://search3958.github.io/i/newtab/](https://search3958.github.io/i/newtab/?utm_source=gemini)）をブラウザの新しいタブを開いたときのページとして設定する手順をご案内します。
+Saetab（[https://search3958.github.io/i/saetab/](https://search3958.github.io/i/saetab/?utm_source=gemini)）をブラウザの新しいタブを開いたときのページとして設定する手順をご案内します。
 
 設定は3ステップで完了します
 
@@ -10,7 +10,7 @@ Newtab（[https://search3958.github.io/i/newtab/](https://search3958.github.io/i
 
 ### **ステップ 1：拡張機能の導入**
 
-Newtab を新しいタブとして読み込むために、専用の拡張機能をインストールします。
+Saetab を新しいタブとして読み込むために、専用の拡張機能をインストールします。
 
 Chromeウェブストアより **「New Tab Redirect」** 拡張機能をインストールしてください。
 
@@ -32,4 +32,4 @@ https://search3958.github.io/newtab/
 
 ---
 
-これで新しいタブを開くたびに Newtab が表示されるようになります。
+これで新しいタブを開くたびに Saetab が表示されるようになります。

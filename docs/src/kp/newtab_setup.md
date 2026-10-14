@@ -1,6 +1,6 @@
-# Newtab 설정방법
+# Saetab 설정방법
 
-Newtab([https://search3958.github.io/i/newtab/](https://search3958.github.io/i/newtab/))을 브라우저의 새 탭을 열 때의 페지로 설정하는 순서를 안출해드립니다.
+Saetab([https://search3958.github.io/i/saetab/](https://search3958.github.io/i/saetab/))을 브라우저의 새 탭을 열 때의 페지로 설정하는 순서를 안출해드립니다.
 
 설정은 3단계로 완결됩니다.
 
@@ -10,7 +10,7 @@ Newtab([https://search3958.github.io/i/newtab/](https://search3958.github.io/i/n
 
 ### **1단계: 확장프로그람 안설치(설치)**
 
-Newtab을 새 탭으로 로드하기 위해 전용 확장프로그람을 안설치(설치)합니다.
+Saetab을 새 탭으로 로드하기 위해 전용 확장프로그람을 안설치(설치)합니다.
 
 Chrome 웹 스토어에서 **"New Tab Redirect"** 확장프로그람을 안설치하십시오.
 
@@ -32,4 +32,4 @@ https://search3958.github.io/newtab/
 
 ---
 
-이제 새 탭을 열 때마다 Newtab이 가리켜집니다.
+이제 새 탭을 열 때마다 Saetab이 가리켜집니다.

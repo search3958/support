@@ -1,6 +1,6 @@
-# Newtab 设置方法
+# Saetab 设置方法
 
-本页面提供如何将Newtab（[https://search3958.github.io/i/newtab/](https://search3958.github.io/i/newtab/?utm_source=gemini)）设置为浏览器打开新标签页时显示的页面的说明。
+本页面提供如何将Saetab（[https://search3958.github.io/i/saetab/](https://search3958.github.io/i/saetab/?utm_source=gemini)）设置为浏览器打开新标签页时显示的页面的说明。
 
 设置通过3个步骤完成
 
@@ -10,7 +10,7 @@
 
 ### **步骤1：安装扩展程序**
 
-要将Newtab加载为新标签页，请安装专用的扩展程序。
+要将Saetab加载为新标签页，请安装专用的扩展程序。
 
 从Chrome网上应用店安装 **“New Tab Redirect”** 扩展程序。
 
@@ -32,4 +32,4 @@ https://search3958.github.io/newtab/
 
 ---
 
-现在，每次打开新标签页时都会显示Newtab。
+现在，每次打开新标签页时都会显示Saetab。
