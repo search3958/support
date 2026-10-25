@@ -12,11 +12,11 @@ Saetab([https://search3958.github.io/i/saetab/](https://search3958.github.io/i/s
 
 Saetab을 새 탭으로 로드하기 위해 전용 확장프로그람을 안설치(설치)합니다.
 
-Chrome 웹 스토어에서 **"New Tab Redirect"** 확장프로그람을 안설치하십시오.
+Chrome 웹 스토어에서 **"[New Tab Redirect](https://chromewebstore.google.com/detail/new-tab-redirect/icpgjfneehieebagbmdbhnlpiopdcmna?hl=ja&pli=1)"** 확장프로그람을 안설치하십시오.
 
 ### **2단계: URL 입력**
 
-1. 안설치가 완결되면 브라우저 우상단의 확장프로그람(퍼즐조각 아이콘 등)에서 **New Tab Redirect** 아이콘을 누릅니다.
+1. 안설치가 완결되면 브라우저 우상단의 확장프로그람(퍼즐조각 아이콘 등)에서 **[New Tab Redirect](https://chromewebstore.google.com/detail/new-tab-redirect/icpgjfneehieebagbmdbhnlpiopdcmna?hl=ja&pli=1)** 아이콘을 누릅니다.
 2. 가리키는 메뉴에서 "Set Options"를 선택합니다.
 
 ### **3단계: 설정보관**

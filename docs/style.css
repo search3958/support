@@ -30,30 +30,32 @@ a {
     padding-top: 0;
     font-weight: 400;
 }
-
+goodcard, .xincard {
+    margin: 12px auto;
+    border-radius: 32px;
+    width: calc(100% - 24px);
+    corner-shape: superellipse(1.6);
+    max-width: 1200px;
+}
 .xincard {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     padding-top: 24px;
     gap: 4px;
     flex-direction: column;
-    font-weight: 600;
+    font-weight: bold;
     text-align: center;
     font-size: 32px;
-    background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 1),
-    rgba(207, 217, 232, 1)
-    );
+    background: #fff;
 }
 
 .primary-btn {
-    padding: 8px 16px;
-    border-radius: 100px;
-    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 99px;
+    corner-shape: superellipse(1.4);
+    font-weight: bold;
     border: none;
-    cursor: pointer;
 }
 
 .support-markdown-container {

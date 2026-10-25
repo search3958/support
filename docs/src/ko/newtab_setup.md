@@ -1,6 +1,6 @@
 # Saetab 설정 방법
 
-Saetab([https://search3958.github.io/i/saetab/](https://search3958.github.io/i/saetab/?utm_source=gemini))를 브라우저의 새 탭을 열 때의 페이지로 설정하는 절차를 안내합니다.
+Saetab([https://search3958.github.io/i/saetab/](https://search3958.github.io/i/saetab/))를 브라우저의 새 탭을 열 때의 페이지로 설정하는 절차를 안내합니다.
 
 설정은 3단계로 완료됩니다
 
@@ -12,11 +12,11 @@ Saetab([https://search3958.github.io/i/saetab/](https://search3958.github.io/i/s
 
 Saetab을 새 탭으로 로드하기 위해 전용 확장 프로그램을 설치합니다.
 
-Chrome 웹 스토어에서 **"New Tab Redirect"** 확장 프로그램을 설치하십시오.
+Chrome 웹 스토어에서 **"[New Tab Redirect](https://chromewebstore.google.com/detail/new-tab-redirect/icpgjfneehieebagbmdbhnlpiopdcmna?hl=ja&pli=1)"** 확장 프로그램을 설치하십시오.
 
 ### **2단계: URL 입력**
 
-1. 설치가 완료되면 브라우저 오른쪽 상단의 확장 프로그램(퍼즐 조각 아이콘 등)에서 **New Tab Redirect** 아이콘을 클릭합니다.
+1. 설치가 완료되면 브라우저 오른쪽 상단의 확장 프로그램(퍼즐 조각 아이콘 등)에서 **[New Tab Redirect](https://chromewebstore.google.com/detail/new-tab-redirect/icpgjfneehieebagbmdbhnlpiopdcmna?hl=ja&pli=1)** 아이콘을 클릭합니다.
 2. 표시되는 메뉴에서 **"Set Options"**를 선택합니다.
 
 ### **3단계: 설정 저장**
